@@ -12,6 +12,18 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* iPhone 底部安全区 */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* 全局触控优化 */
+@media (max-width: 640px) {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
