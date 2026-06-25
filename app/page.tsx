@@ -5,7 +5,6 @@ import { questions } from "@/lib/questions";
 import { calculateScores } from "@/lib/scoring";
 import { DIMENSION_LABELS, DIMENSION_ORDER, type Question } from "@/lib/types";
 
-const QUESTIONS_PER_PAGE = 8;
 const STORAGE_KEY = "yima_diagnosis_draft";
 
 const DIM_TRANSITIONS: Record<string, string> = {
@@ -39,11 +38,6 @@ const dimGroups = groupByDim();
 
 const qDimMap: Record<string, string> = {};
 questions.forEach((q) => { qDimMap[q.id] = q.dimension; });
-
-const qIndexMap: Record<string, number> = {};
-questions.forEach((q, i) => { qIndexMap[q.id] = i; });
-
-const allQIds = questions.map((q) => q.id);
 
 // Types
 interface CompanyInfo { industry: string; storeCount: string; }
