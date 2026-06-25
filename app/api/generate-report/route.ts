@@ -86,12 +86,32 @@ export async function POST(request: Request) {
               .map((c: { text: string }) => c.text)
               .join("") || "";
 
+          // 尝试提取并修复 JSON
           const jsonMatch = text.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
-            const report = JSON.parse(jsonMatch[0]);
-            return Response.json({ report });
+            let jsonStr = jsonMatch[0];
+            try {
+              const report = JSON.parse(jsonStr);
+              return Response.json({ report });
+            } catch {
+              // JSON 修复：补缺失逗号、去尾逗号
+              try {
+                jsonStr = jsonStr
+                  .replace(/,\s*}/g, "}")           // 去对象尾逗号
+                  .replace(/,\s*]/g, "]")            // 去数组尾逗号
+                  .replace(/"\s+"/g, '","')          // 补字符串间逗号
+                  .replace(/]\s*"/g, '],"')          // 补 ]" 间逗号
+                  .replace(/}\s*{/g, "},{")          // 补对象间逗号
+                  .replace(/]\s*\[/g, "],[");        // 补数组间逗号
+                const report = JSON.parse(jsonStr);
+                return Response.json({ report });
+              } catch {
+                lastError = "AI JSON 格式异常，无法修复";
+              }
+            }
+          } else {
+            lastError = "AI 返回格式异常，未找到有效 JSON";
           }
-          lastError = "AI 返回格式异常，未找到有效 JSON";
           allErrors.push(`${endpoint.url} → 格式异常`);
         } else {
           const err = await resp.text();
@@ -135,21 +155,19 @@ function buildPrompt(
   if (industry) context.push(`行业：${industry}`);
   if (storeCount) context.push(`门店数：${storeCount}`);
   const contextStr = context.length > 0 ? `\n企业背景：${context.join("，")}` : "";
+  const industryHint = industry ? `\n注意：该企业属于${industry}行业，诊断分析和建议需针对${industry}连锁特性。` : "";
 
-  return `连锁企业诊断数据：综合${overall_score}分，等级${level}。维度得分：${dimList}。${contextStr}
+  return `连锁企业诊断数据：综合${overall_score}分，等级${level}。维度得分：${dimList}。${contextStr}${industryHint}
 
-请只输出以下JSON（不要markdown，不要额外文字）：
+请只输出一行完整JSON，严格遵守以下格式（注意引号和逗号，不要有语法错误）：
 
-{
-  "overview": {"headline":"一句话定性(20字内)","stage":"发展阶段(15字内)","strength":"核心优势(30字内)","risk":"最大风险(30字内)"},
-  "dimensions":[{"dim":"维度名","score":分数,"comment":"一句话诊断(25字内)","tips":["建议1(20字内)","建议2(20字内)"]}],
-  "actions":[{"title":"行动项(15字内)","why":"原因(20字内)","timeline":"周期(如:1个月)"}],
-  "yima":"逸马如何帮到你(80字内)"
-}
+{"overview":{"headline":"20字内","stage":"15字内","strength":"30字内","risk":"30字内"},"dimensions":[{"dim":"维度名","score":分数,"comment":"25字内","tips":["建议1","建议2"]}],"actions":[{"title":"15字内","why":"20字内","timeline":"周期"}],"yima":"逸马价值80字内"}
 
-要求：
-- overview各字段简洁有冲击力
-- dimensions包含全部9个维度，按得分从低到高排列，每个维度2条建议
+强制规则：
+- 输出必须是一行合法JSON，不要换行，不要markdown代码块
+- 所有键和字符串用英文双引号
+- dimensions必须包含全部9个维度，按得分从低到高排列
 - actions给3条最优先行动
-- 所有中文字符控制在800字以内`;
+- tips每个维度2条建议
+- 总字数控制在800字以内`;
 }

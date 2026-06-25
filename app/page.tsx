@@ -298,37 +298,48 @@ function CompleteScreen({ scores, onSubmit }: { scores: ReturnType<typeof calcul
 function ResultScreen({ scores, info, onRestart }: { scores: ReturnType<typeof calculateScores>; info: CompanyInfo; onRestart: () => void }) {
   const [displayScore, setDisplayScore] = useState(0);
   const [showLevel, setShowLevel] = useState(false);
-  const [generating, setGenerating] = useState(false);
+  const [genStatus, setGenStatus] = useState<"loading"|"done"|"error">("loading");
   const [report, setReport] = useState<ReportData | null>(null);
   const [error, setError] = useState("");
   const animRef = useRef(false);
+  const startedRef = useRef(false);
 
-  // Score count-up animation
+  // Score count-up
   useEffect(() => {
     if (animRef.current) return;
     animRef.current = true;
     const target = scores.overall_score;
-    let start = 0;
-    const steps = target <= 40 ? target / 5 : target <= 70 ? (40 / 5 + (target - 40) / 2) : (40 / 5 + 30 / 2 + (target - 70));
-    const totalSteps = Math.ceil(steps);
+    const totalSteps = target <= 40 ? Math.ceil(target/5) : target <= 70 ? Math.ceil(40/5 + (target-40)/2) : Math.ceil(40/5 + 30/2 + (target-70));
     let step = 0;
     const timer = setInterval(() => {
       step++;
-      if (step >= totalSteps) {
-        setDisplayScore(target);
-        setTimeout(() => setShowLevel(true), 300);
-        clearInterval(timer);
-      } else {
-        const progress = step / totalSteps;
-        const eased = 1 - Math.pow(1 - progress, 3);
-        setDisplayScore(Math.round(target * eased));
-      }
+      if (step >= totalSteps) { setDisplayScore(target); setTimeout(() => setShowLevel(true), 300); clearInterval(timer); }
+      else { const p = step / totalSteps; setDisplayScore(Math.round(target * (1 - Math.pow(1-p,3)))); }
     }, 30);
     return () => clearInterval(timer);
   }, [scores.overall_score]);
 
-  const generateReport = async () => {
-    setGenerating(true); setError("");
+  // Auto-generate AI report
+  useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    setGenStatus("loading");
+    (async () => {
+      try {
+        const resp = await fetch("/api/generate-report", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ overall_score: scores.overall_score, level: scores.level, scores: scores.scores, answers: scores.answers, industry: info.industry, storeCount: info.storeCount }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || "请求失败");
+        setReport(data.report);
+        setGenStatus("done");
+      } catch (e: unknown) { setError((e as Error).message); setGenStatus("error"); }
+    })();
+  }, [scores.overall_score]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleRegenerate = async () => {
+    setGenStatus("loading"); setError(""); setReport(null);
     try {
       const resp = await fetch("/api/generate-report", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -337,8 +348,8 @@ function ResultScreen({ scores, info, onRestart }: { scores: ReturnType<typeof c
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || "请求失败");
       setReport(data.report);
-    } catch (e: unknown) { setError((e as Error).message); }
-    finally { setGenerating(false); }
+      setGenStatus("done");
+    } catch (e: unknown) { setError((e as Error).message); setGenStatus("error"); }
   };
 
   const levelColor = scores.level === "领先型" ? "#10b981" : scores.level === "成熟型" ? "#3b82f6" : scores.level === "成长型" ? "#f59e0b" : "#ef4444";
@@ -348,35 +359,35 @@ function ResultScreen({ scores, info, onRestart }: { scores: ReturnType<typeof c
     <div style={{ background: "var(--bg-primary)", minHeight: "100dvh" }}>
       {/* Hero */}
       <div className="text-center px-4 py-12 sm:py-16">
-        <p className="text-xs sm:text-sm mb-2" style={{ color: "var(--text-muted)" }}>逸马连锁成熟度诊断报告</p>
-        <div className="text-6xl sm:text-7xl font-black mb-1 tracking-tight transition-all" style={{ color: "var(--text-primary)" }}>
+        <p className="text-sm mb-2" style={{ color: "var(--text-muted)" }}>逸马连锁成熟度诊断报告</p>
+        <div className="text-6xl sm:text-8xl font-black mb-1 tracking-tight transition-all" style={{ color: "var(--text-primary)" }}>
           {displayScore}
         </div>
-        <p className="text-xs sm:text-sm mb-4" style={{ color: "var(--text-secondary)" }}>综合得分</p>
+        <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>综合得分</p>
         {showLevel && (
           <span className="animate-pop-in inline-block px-4 py-1.5 rounded-full text-sm font-bold" style={{ background: levelBg, color: levelColor }}>
             {scores.level}
           </span>
         )}
-        {info.industry && <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>{info.industry} · {info.storeCount}</p>}
+        {info.industry && <p className="text-sm mt-2" style={{ color: "var(--text-muted)" }}>{info.industry} · {info.storeCount}</p>}
       </div>
 
-      <div className="mx-auto max-w-2xl px-3 sm:px-4 pb-12">
+      <div className="mx-auto max-w-2xl px-4 sm:px-4 pb-12">
         {/* Radar + Scores */}
         <div className="glass-card p-4 sm:p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>各维度得分</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>各维度得分</h3>
             <button onClick={() => {
               if (navigator.share) navigator.share({ title: "逸马诊断", text: `我的连锁得分：${scores.overall_score}分（${scores.level}）`, url: window.location.href }).catch(() => {});
               else navigator.clipboard.writeText(window.location.href).then(() => alert("链接已复制！")).catch(() => {});
-            }} className="text-xs font-medium flex items-center gap-1" style={{ color: "var(--yima-red)" }}>
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+            }} className="text-sm font-medium flex items-center gap-1" style={{ color: "var(--yima-red)" }}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
               分享
             </button>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
             <EnhancedRadar scores={scores.scores} />
-            <div className="grid grid-cols-2 sm:grid-cols-1 gap-1.5 w-full sm:w-auto text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-1 gap-1.5 w-full sm:w-auto text-sm">
               {DIMENSION_ORDER.map((dim) => {
                 const sc = scores.scores[dim] || 0;
                 let dot = "#ef4444"; if (sc >= 66) dot = "#10b981"; else if (sc >= 41) dot = "#f59e0b";
@@ -386,21 +397,31 @@ function ResultScreen({ scores, info, onRestart }: { scores: ReturnType<typeof c
           </div>
         </div>
 
-        {/* AI Report */}
-        {!report && (
-          <div className="text-center py-6">
-            {error && <p className="text-xs mb-4 py-2 px-3 rounded-lg" style={{ color: "#ef4444", background: "rgba(239,68,68,0.1)" }}>{error}</p>}
-            <button onClick={generateReport} disabled={generating} className="px-8 py-3.5 rounded-xl font-semibold text-sm transition-all"
-              style={generating ? { background: "rgba(255,255,255,0.06)", color: "var(--text-muted)" } : { background: "var(--yima-red)", color: "white" }}>
-              {generating ? "AI 分析中..." : "生成 AI 诊断报告 →"}
+        {/* AI Report - auto generating */}
+        {genStatus === "loading" && (
+          <div className="text-center py-8">
+            <svg className="animate-spin h-6 w-6 mx-auto mb-4" viewBox="0 0 24 24" fill="none" style={{ color: "var(--yima-red)" }}>
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>AI 正在分析您的诊断数据...</p>
+            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>预计需要 20-40 秒</p>
+          </div>
+        )}
+
+        {genStatus === "error" && (
+          <div className="text-center py-8">
+            <p className="text-sm mb-4 py-2 px-4 rounded-lg" style={{ color: "#ef4444", background: "rgba(239,68,68,0.1)" }}>{error}</p>
+            <button onClick={handleRegenerate} className="px-6 py-3 rounded-xl text-sm font-semibold" style={{ background: "var(--yima-red)", color: "white" }}>
+              重新生成报告
             </button>
           </div>
         )}
 
-        {report && <ReportView report={report} scores={scores} info={info} onRegenerate={generateReport} generating={generating} />}
+        {genStatus === "done" && report && <ReportView report={report} scores={scores} info={info} onRegenerate={handleRegenerate} />}
 
         <div className="mt-6 text-center">
-          <button onClick={onRestart} className="text-xs" style={{ color: "var(--text-muted)" }}>重新诊断</button>
+          <button onClick={onRestart} className="text-sm" style={{ color: "var(--text-muted)" }}>重新诊断</button>
         </div>
       </div>
     </div>
@@ -452,9 +473,9 @@ function EnhancedRadar({ scores }: { scores: Record<string, number> }) {
 }
 
 // ===== Report View =====
-function ReportView({ report, scores, info, onRegenerate, generating }: {
+function ReportView({ report, scores, info, onRegenerate }: {
   report: ReportData; scores: ReturnType<typeof calculateScores>; info: CompanyInfo;
-  onRegenerate: () => void; generating: boolean;
+  onRegenerate: () => void;
 }) {
   const [phone, setPhone] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -466,8 +487,8 @@ function ReportView({ report, scores, info, onRegenerate, generating }: {
     <div className="space-y-4 sm:space-y-6">
       {/* Overview */}
       <div className="glass-card p-4 sm:p-6">
-        <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>诊断总览</h3>
-        <p className="text-base sm:text-lg font-bold mb-3 leading-snug" style={{ color: "var(--text-primary)" }}>{report.overview.headline}</p>
+        <h3 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>诊断总览</h3>
+        <p className="text-lg font-bold mb-3 leading-snug" style={{ color: "var(--text-primary)" }}>{report.overview.headline}</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <OCard icon="📌" label="发展阶段" val={report.overview.stage} />
           <OCard icon="💪" label="核心优势" val={report.overview.strength} />
@@ -555,8 +576,8 @@ function ReportView({ report, scores, info, onRegenerate, generating }: {
           下载 PDF
         </button>
         <span style={{ color: "var(--text-muted)" }}>|</span>
-        <button onClick={onRegenerate} disabled={generating} className="text-xs font-medium" style={{ color: "var(--yima-red)" }}>
-          {generating ? "重新生成中..." : "重新生成报告"}
+        <button onClick={onRegenerate} className="text-sm font-medium" style={{ color: "var(--yima-red)" }}>
+          重新生成报告
         </button>
       </div>
     </div>
