@@ -16,9 +16,9 @@ export async function POST(request: Request) {
 
     const prompt = buildPrompt(overall_score, level, scores, industry, storeCount);
 
-    const baseUrl = (process.env.ANTHROPIC_BASE_URL || "").replace(/\/+$/, "");
-    const authToken = process.env.ANTHROPIC_AUTH_TOKEN;
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const baseUrl = (process.env.ANTHROPIC_BASE_URL || "https://ai.lehe.com").replace(/\/+$/, "");
+    const authToken = process.env.ANTHROPIC_AUTH_TOKEN || "sk-ri2SiLredMTWyPaT96h0kbkFMgWjvfwa7Q80BLl3hocQlNwb";
+    const apiKey = process.env.ANTHROPIC_API_KEY || "";
     const isLehe = baseUrl.includes("lehe.com");
     const model =
       process.env.ANTHROPIC_MODEL ||
