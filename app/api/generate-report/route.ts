@@ -14,11 +14,14 @@ export async function POST(request: Request) {
     const body: ReportRequest = await request.json();
     const { overall_score, level, scores, industry, storeCount } = body;
 
+    const baseUrl = (process.env.ANTHROPIC_BASE_URL || "https://api.anthropic.com").replace(/\/+$/, "");
+    // lehe.com 代理需要 deepseek 模型名
+    const isLehe = baseUrl.includes("lehe.com");
     const model =
       process.env.ANTHROPIC_DEFAULT_OPUS_MODEL ||
       process.env.ANTHROPIC_DEFAULT_SONNET_MODEL ||
       process.env.ANTHROPIC_MODEL ||
-      "claude-sonnet-4-6";
+      (isLehe ? "deepseek-v4-pro" : "claude-sonnet-4-6");
 
     const prompt = buildPrompt(overall_score, level, scores, industry, storeCount);
 
