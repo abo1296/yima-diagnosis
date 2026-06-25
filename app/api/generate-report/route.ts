@@ -14,50 +14,47 @@ export async function POST(request: Request) {
     const body: ReportRequest = await request.json();
     const { overall_score, level, scores, industry, storeCount } = body;
 
-    const baseUrl = (process.env.ANTHROPIC_BASE_URL || "https://api.anthropic.com").replace(/\/+$/, "");
-    // lehe.com 代理需要 deepseek 模型名
+    const prompt = buildPrompt(overall_score, level, scores, industry, storeCount);
+
+    const baseUrl = (process.env.ANTHROPIC_BASE_URL || "").replace(/\/+$/, "");
+    const authToken = process.env.ANTHROPIC_AUTH_TOKEN;
+    const apiKey = process.env.ANTHROPIC_API_KEY;
     const isLehe = baseUrl.includes("lehe.com");
     const model =
-      process.env.ANTHROPIC_DEFAULT_OPUS_MODEL ||
-      process.env.ANTHROPIC_DEFAULT_SONNET_MODEL ||
       process.env.ANTHROPIC_MODEL ||
+      process.env.ANTHROPIC_DEFAULT_SONNET_MODEL ||
+      process.env.ANTHROPIC_DEFAULT_OPUS_MODEL ||
       (isLehe ? "deepseek-v4-pro" : "claude-sonnet-4-6");
-
-    const prompt = buildPrompt(overall_score, level, scores, industry, storeCount);
 
     const endpoints: { url: string; headers: Record<string, string> }[] = [];
 
-    endpoints.push({
-      url: "http://127.0.0.1:15721/v1/messages",
-      headers: { "Content-Type": "application/json", "anthropic-version": "2023-06-01" },
-    });
-
-    const envBase = process.env.ANTHROPIC_BASE_URL;
-    const authToken = process.env.ANTHROPIC_AUTH_TOKEN;
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (envBase && envBase !== "http://127.0.0.1:15721/" && envBase !== "http://127.0.0.1:15721") {
-      const headers: Record<string, string> = {
+    // 1. 远程代理（优先，Cloudflare 上唯一可用的）
+    if (baseUrl) {
+      const h: Record<string, string> = {
         "Content-Type": "application/json",
         "anthropic-version": "2023-06-01",
       };
       if (authToken && authToken !== "PROXY_MANAGED") {
-        headers["Authorization"] = `Bearer ${authToken}`;
+        h["Authorization"] = `Bearer ${authToken}`;
       } else if (apiKey) {
-        headers["x-api-key"] = apiKey;
+        h["x-api-key"] = apiKey;
       }
-      endpoints.push({ url: `${envBase.replace(/\/+$/, "")}/v1/messages`, headers });
+      endpoints.push({ url: `${baseUrl}/v1/messages`, headers: h });
     }
 
+    // 2. Anthropic 官方
     if (apiKey) {
       endpoints.push({
         url: "https://api.anthropic.com/v1/messages",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-        },
+        headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
       });
     }
+
+    // 3. 本地代理兜底（仅开发环境有效）
+    endpoints.push({
+      url: "http://127.0.0.1:15721/v1/messages",
+      headers: { "Content-Type": "application/json", "anthropic-version": "2023-06-01" },
+    });
 
     let lastError = "";
     for (const endpoint of endpoints) {
@@ -88,7 +85,6 @@ export async function POST(request: Request) {
               .map((c: { text: string }) => c.text)
               .join("") || "";
 
-          // 尝试提取 JSON
           const jsonMatch = text.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             const report = JSON.parse(jsonMatch[0]);
