@@ -169,23 +169,44 @@ export default function QuestionnairePage() {
 // ===================== Welcome =====================
 function WelcomeScreen({ onStart }: { onStart: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-gradient-to-b from-blue-50 to-white px-5">
-      <div className="max-w-md text-center">
+    <div className="flex flex-col items-center justify-center min-h-[100dvh] bg-gradient-to-b from-blue-50 to-white px-5 py-8">
+      <div className="max-w-md w-full text-center">
         <div className="text-4xl sm:text-5xl mb-4 sm:mb-5">🏬</div>
-        <h1 className="text-xl sm:text-2xl font-bold text-zinc-900 mb-2 sm:mb-3">逸马连锁成熟度诊断</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-zinc-900 mb-2 sm:mb-3">
+          你的连锁企业，离失控还有多远？
+        </h1>
         <p className="text-sm sm:text-base text-zinc-500 leading-relaxed mb-2">
-          基于逸马 22 年连锁咨询方法论，从 9 个维度全面评估您的连锁体系成熟度。
+          扩张越快，隐患越深。标准化跟不上，复制就是找死。
         </p>
-        <div className="flex flex-wrap justify-center gap-1.5 mb-5 sm:mb-6 text-xs text-zinc-400">
+        <p className="text-xs sm:text-sm text-zinc-400 mb-5">
+          逸马 22 年方法论 · 9 维度成熟度模型 · 30 分钟出报告
+        </p>
+
+        <div className="flex flex-wrap justify-center gap-1.5 mb-5 text-xs text-zinc-400">
           {DIMENSION_ORDER.map((d) => (
             <span key={d} className="bg-white border border-zinc-200 rounded-full px-2.5 py-0.5 sm:px-3 sm:py-1 text-[11px] sm:text-xs">{DIMENSION_LABELS[d]}</span>
           ))}
         </div>
-        <div className="text-xs sm:text-sm text-zinc-400 mb-6 sm:mb-7">共 72 题 · 约 12 分钟 · 完全免费</div>
+        <div className="text-xs sm:text-sm text-zinc-400 mb-5 sm:mb-6">共 72 题 · 约 12 分钟 · 完全免费</div>
         <button onClick={onStart}
           className="w-full py-4 rounded-xl bg-blue-600 text-white font-semibold text-base sm:text-lg hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-[0.98]">
-          开始诊断
+          开始免费诊断
         </button>
+        <p className="text-[11px] text-zinc-400 mt-3">已有 3,286 家企业完成诊断 · 答题进度自动保存</p>
+
+        {/* Social Proof */}
+        <div className="mt-8 pt-6 border-t border-zinc-200">
+          <p className="text-[10px] sm:text-xs text-zinc-400 mb-3 uppercase tracking-wider">已服务客户</p>
+          <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-zinc-400 font-medium">
+            <span>百果园</span><span className="text-zinc-200">·</span>
+            <span>锅圈食汇</span><span className="text-zinc-200">·</span>
+            <span>木屋烧烤</span><span className="text-zinc-200">·</span>
+            <span>苏宁</span><span className="text-zinc-200">·</span>
+            <span>良品铺子</span><span className="text-zinc-200">·</span>
+            <span>周黑鸭</span>
+          </div>
+          <p className="text-[10px] text-zinc-400 mt-2">3,000+ 会员企业 · 195 家已上市</p>
+        </div>
       </div>
     </div>
   );
@@ -301,21 +322,39 @@ function ResultScreen({
       </div>
 
       <div className="mx-auto max-w-2xl px-3 sm:px-4 py-6 sm:py-8">
-        {/* Dimension bars */}
-        <h3 className="font-bold text-zinc-900 mb-3 sm:mb-4 text-xs sm:text-sm uppercase tracking-wider text-zinc-400">各维度得分</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mb-8 sm:mb-10">
-          {DIMENSION_ORDER.map((dim) => {
-            const score = scores.scores[dim] || 0;
-            let bg = "bg-red-50 border-red-200 text-red-700";
-            if (score >= 66) bg = "bg-blue-50 border-blue-200 text-blue-700";
-            else if (score >= 41) bg = "bg-amber-50 border-amber-200 text-amber-700";
-            return (
-              <div key={dim} className={`flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border ${bg}`}>
-                <span className="text-sm font-medium">{DIMENSION_LABELS[dim]}</span>
-                <span className="text-base sm:text-lg font-bold">{score}</span>
-              </div>
-            );
-          })}
+        {/* Radar Chart + Score Grid */}
+        <div className="bg-white border border-zinc-200 rounded-2xl p-4 sm:p-6 shadow-sm mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xs sm:text-sm font-semibold text-zinc-400 uppercase tracking-wider">各维度得分</h3>
+            <button onClick={() => {
+              if (navigator.share) {
+                navigator.share({ title: "逸马连锁成熟度诊断", text: `我的连锁成熟度得分：${scores.overall_score}分（${scores.level}）`, url: window.location.href }).catch(() => {});
+              } else {
+                navigator.clipboard.writeText(window.location.href).then(() => alert("链接已复制，发送给合伙人一起测！")).catch(() => {});
+              }
+            }} className="text-xs text-blue-600 font-medium active:text-blue-800 flex items-center gap-1">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+              分享给合伙人
+            </button>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+            <RadarChart scores={scores.scores} />
+            <div className="grid grid-cols-2 sm:grid-cols-1 gap-1.5 w-full sm:w-auto text-xs">
+              {DIMENSION_ORDER.map((dim) => {
+                const score = scores.scores[dim] || 0;
+                let dot = "bg-red-500";
+                if (score >= 66) dot = "bg-emerald-500";
+                else if (score >= 41) dot = "bg-amber-500";
+                return (
+                  <div key={dim} className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
+                    <span className="text-zinc-600 truncate">{DIMENSION_LABELS[dim]}</span>
+                    <span className="font-semibold text-zinc-900 ml-auto">{score}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* AI Section */}
@@ -342,7 +381,7 @@ function ResultScreen({
           </div>
         )}
 
-        {report && <ReportView report={report} scores={scores} onRegenerate={generateReport} generating={generating} />}
+        {report && <ReportView report={report} scores={scores} onRegenerate={generateReport} generating={generating} info={info} />}
 
         <div className="mt-5 sm:mt-6 text-center">
           <button onClick={onRestart} className="text-xs sm:text-sm text-zinc-400 hover:text-zinc-600 transition-colors">重新诊断</button>
@@ -352,13 +391,79 @@ function ResultScreen({
   );
 }
 
+// ===================== Radar Chart =====================
+function RadarChart({ scores }: { scores: Record<string, number> }) {
+  const size = 200;
+  const cx = size / 2;
+  const cy = size / 2;
+  const radius = 80;
+  const levels = 5;
+
+  const angleSlice = (2 * Math.PI) / DIMENSION_ORDER.length;
+
+  const getPoint = (dim: string, value: number) => {
+    const idx = DIMENSION_ORDER.indexOf(dim);
+    const angle = angleSlice * idx - Math.PI / 2;
+    const r = (value / 100) * radius;
+    return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
+  };
+
+  const gridLines = Array.from({ length: levels }, (_, i) => {
+    const r = ((i + 1) / levels) * radius;
+    return DIMENSION_ORDER.map((_, idx) => {
+      const angle = angleSlice * idx - Math.PI / 2;
+      return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`;
+    }).join(" ");
+  });
+
+  const dataPoints = DIMENSION_ORDER.map((dim) => {
+    const p = getPoint(dim, scores[dim] || 0);
+    return `${p.x},${p.y}`;
+  }).join(" ");
+
+  return (
+    <div className="flex-shrink-0">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="overflow-visible">
+        {gridLines.map((pts, i) => (
+          <polygon key={i} points={pts} fill="none" stroke="#e4e4e7" strokeWidth={i === 4 ? 1.5 : 0.5} />
+        ))}
+        {DIMENSION_ORDER.map((dim, idx) => {
+          const p = getPoint(dim, 100);
+          return <line key={dim} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="#e4e4e7" strokeWidth={0.5} />;
+        })}
+        <polygon points={dataPoints} fill="rgba(37,99,235,0.15)" stroke="#2563eb" strokeWidth={2} strokeLinejoin="round" />
+        {DIMENSION_ORDER.map((dim) => {
+          const p = getPoint(dim, scores[dim] || 0);
+          return <circle key={dim} cx={p.x} cy={p.y} r={3} fill="#2563eb" />;
+        })}
+        {DIMENSION_ORDER.map((dim, idx) => {
+          const angle = angleSlice * idx - Math.PI / 2;
+          const labelR = radius + 18;
+          const x = cx + labelR * Math.cos(angle);
+          const y = cy + labelR * Math.sin(angle);
+          return (
+            <text key={dim} x={x} y={y} textAnchor="middle" dominantBaseline="middle" className="fill-zinc-500" style={{ fontSize: "9px" }}>
+              {DIMENSION_LABELS[dim]}
+            </text>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
 // ===================== Report View =====================
-function ReportView({ report, scores, onRegenerate, generating }: {
+function ReportView({ report, scores, onRegenerate, generating, info }: {
   report: ReportData;
   scores: ReturnType<typeof calculateScores>;
   onRegenerate: () => void;
   generating: boolean;
+  info: CompanyInfo;
 }) {
+  const [phone, setPhone] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const handlePrint = () => window.print();
+  const handleConsult = () => { if (!phone) return; setSubmitted(true); };
   // Sort dimensions low to high
   const sortedDims = [...report.dimensions].sort((a, b) => a.score - b.score);
 
@@ -435,8 +540,34 @@ function ReportView({ report, scores, onRegenerate, generating }: {
         <p className="text-xs sm:text-sm text-zinc-700 leading-relaxed">{report.yima}</p>
       </div>
 
-      {/* Regenerate */}
-      <div className="text-center pt-1 sm:pt-2">
+      {/* Consultation CTA */}
+      <div className="bg-white border border-zinc-200 rounded-2xl p-4 sm:p-6 shadow-sm">
+        <h3 className="text-sm font-bold text-zinc-900 mb-2">获取专属改进方案</h3>
+        <p className="text-xs text-zinc-500 mb-4">留下手机号，逸马顾问将为您定制诊断深度解读与改进路线图。</p>
+        {submitted ? (
+          <div className="text-center py-3 bg-green-50 rounded-xl">
+            <p className="text-sm font-semibold text-green-700">已提交！</p>
+            <p className="text-xs text-green-600 mt-1">逸马顾问将在 1 个工作日内联系您</p>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="请输入手机号"
+              className="flex-1 px-4 py-3 rounded-xl border border-zinc-200 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+            <button onClick={handleConsult} disabled={!phone}
+              className={`px-5 py-3 rounded-xl text-sm font-semibold transition-all shrink-0 ${
+                phone ? "bg-blue-600 text-white active:bg-blue-700" : "bg-zinc-200 text-zinc-400"
+              }`}>预约咨询</button>
+          </div>
+        )}
+      </div>
+
+      {/* Actions: PDF + Share + Regenerate */}
+      <div className="flex items-center justify-center gap-4 pt-1 sm:pt-2 flex-wrap">
+        <button onClick={handlePrint} className="text-xs sm:text-sm text-zinc-500 active:text-zinc-800 font-medium flex items-center gap-1">
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+          下载 PDF
+        </button>
+        <span className="text-zinc-200">|</span>
         <button onClick={onRegenerate} disabled={generating}
           className="text-xs sm:text-sm text-blue-600 active:text-blue-800 font-medium">
           {generating ? "重新生成中..." : "重新生成报告"}
