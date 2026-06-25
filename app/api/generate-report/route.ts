@@ -57,6 +57,7 @@ export async function POST(request: Request) {
     });
 
     let lastError = "";
+    const allErrors: string[] = [];
     for (const endpoint of endpoints) {
       try {
         const controller = new AbortController();
@@ -91,17 +92,20 @@ export async function POST(request: Request) {
             return Response.json({ report });
           }
           lastError = "AI 返回格式异常，未找到有效 JSON";
+          allErrors.push(`${endpoint.url} → 格式异常`);
         } else {
           const err = await resp.text();
           lastError = `${endpoint.url} → ${resp.status}: ${err.slice(0, 200)}`;
+          allErrors.push(lastError);
         }
       } catch (e: unknown) {
         lastError = `${endpoint.url} → ${(e as Error).message}`;
+        allErrors.push(lastError);
       }
     }
 
     return Response.json(
-      { error: `所有 API 端点均失败。最后错误: ${lastError}` },
+      { error: `所有 API 端点均失败。错误列表: ${allErrors.join(" | ")}` },
       { status: 500 }
     );
   } catch (e: unknown) {
