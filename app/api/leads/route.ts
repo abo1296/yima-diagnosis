@@ -13,7 +13,7 @@ function getKV() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { phone, industry, industry_code, storeCount, score, level, action } = body;
+    const { phone, industry, industry_code, storeCode, storeCount, store_code, score, level, action } = body;
 
     // 行业编号→中文映射（前端传编号，绕开OpenNext中文bug）
     const INDUSTRY_NAME: Record<number, string> = {
@@ -22,6 +22,10 @@ export async function POST(request: Request) {
       10: "服装", 11: "其他连锁"
     };
     const industryName = INDUSTRY_NAME[industry_code] || industry || "-";
+
+    // 门店编号→中文
+    const STORE_NAME: Record<number, string> = { 0: "1-10家", 1: "11-50家", 2: "51-200家", 3: "200家以上" };
+    const storeName = STORE_NAME[store_code] || storeCount || storeCode || "-";
 
     // 根据分数重算等级（中文level入参被OpenNext毁了，用ASCII分数重算）
     const numScore = parseInt(score) || 0;
@@ -49,7 +53,7 @@ export async function POST(request: Request) {
     const kv = getKV();
     if (kv) {
       await kv.put(`lead:${Date.now()}:${phone}`, JSON.stringify({
-        phone, industry: industryName, storeCount: storeCount || "",
+        phone, industry: industryName, storeCount: storeName,
         score: score || "", level: levelName, time: new Date().toISOString()
       }));
     }
@@ -59,7 +63,7 @@ export async function POST(request: Request) {
     if (webhook) {
       const payload = JSON.stringify({
         msg_type: "text",
-        content: { text: `📞新线索\n手机：${phone}\n行业：${industryName}\n门店：${storeCount || "-"}\n得分：${score || "-"}（${levelName}）` }
+        content: { text: `📞新线索\n手机：${phone}\n行业：${industryName}\n门店：${storeName}\n得分：${score || "-"}（${levelName}）` }
       });
       try { await fetch(webhook, { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }); } catch {}
     }
