@@ -1050,7 +1050,7 @@ function getIndustryFilter(storeCount?: string): Set<string> {
 
 // ========== 获取某行业×阶段的完整题库 ==========
 export function getQuestionsForIndustry(industry?: string, storeCount?: string): Question[] {
-  const overrides = industry ? industryQuestions[industry] : [];
+  const overrides = industry ? (industryQuestions[industry] || []) : [];
   if (overrides.length === 0) {
     return genericQuestions.filter(q => KEEP_GENERIC_IDS.has(q.id));
   }
