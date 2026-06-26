@@ -549,7 +549,7 @@ function SurveyFlow({ answers, saveAnswers, step, setStep, onComplete, questions
             </p>
           )}
           {/* Question */}
-          <p className="text-center font-semibold mb-10 leading-relaxed" style={{ fontSize: "20px", color: "var(--text-primary)" }}>
+          <p className="text-center font-semibold mb-10 leading-relaxed" style={{ fontSize: "21px", color: "var(--text-primary)" }}>
             {currentQ.text}
           </p>
 
@@ -613,7 +613,7 @@ function WarmupScreen({ questions: wqs, onDone }: {
       </div>
       <main className="flex-1 flex flex-col items-center justify-center px-5">
         <div className="w-full max-w-lg animate-slide-up" key={idx}>
-          <p className="text-center font-semibold mb-10 leading-relaxed" style={{ fontSize: "20px", color: "var(--text-primary)" }}>{currentQ.text}</p>
+          <p className="text-center font-semibold mb-10 leading-relaxed" style={{ fontSize: "21px", color: "var(--text-primary)" }}>{currentQ.text}</p>
           <div className="space-y-2.5">
             {currentQ.options.map((opt) => (
               <button key={opt.value} className="option-btn" onClick={() => handleSelect(opt.value, opt.label)}>
@@ -1000,7 +1000,7 @@ function NewReportView({ scores, report, error, info, barsAnimated, onRestart }:
       {/* ===== Score Summary Bar ===== */}
       <div className="act-bar stagger">
         <span style={{ fontSize: 36, fontWeight: 900, background: "linear-gradient(180deg,#F59E0B,#FDE68A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{scores.overall_score}</span>
-        <span style={{ fontSize: 13, color: "var(--text-muted)", alignSelf: "flex-end", marginBottom: 6 }}>/100 · {scores.level} · 超过 {percentile}% 同行</span>
+        <span style={{ fontSize: 14, color: "var(--text-muted)", alignSelf: "flex-end", marginBottom: 6 }}>/100 · {scores.level} · 超过 {percentile}% 同行</span>
         <div style={{ flex: 1 }} />
         <button className="act-btn" onClick={handleCopy}>📋 复制链接</button>
         <button className="act-btn" onClick={handlePrint}>📥 下载PDF</button>
@@ -1230,7 +1230,7 @@ function NewReportView({ scores, report, error, info, barsAnimated, onRestart }:
       <div className="s-section stagger noprint">
         <div className="glass-card p-4 sm:p-6" style={{ borderColor: "rgba(59,130,246,0.25)", background: "linear-gradient(135deg, rgba(59,130,246,0.06), rgba(6,182,212,0.04))" }}>
           <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>让逸马顾问帮你把诊断变成行动</h3>
-          <p style={{ fontSize: 11, color: "var(--text-secondary)", marginBottom: 14 }}>
+          <p style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 14 }}>
             {report?.nextStep || `基于你的${scores.overall_score}分诊断结果，我们建议下一步进行针对性的深度分析。留下手机号，逸马顾问将在1个工作日内联系你，提供免费的30分钟电话解读。`}
           </p>
           {submitted ? (
