@@ -48,7 +48,9 @@ interface ReportData {
   dimensions: { dim: string; score: number; comment: string; tips: string[] }[];
   actions: { title: string; why: string; timeline: string }[];
   benchmark?: string;
+  painpoint?: string;
   yima: string;
+  nextStep?: string;
 }
 
 const INDUSTRIES = ["餐饮","零售","酒店民宿","教育培训","美容美发","健身运动","汽车服务","医疗健康","宠物服务","便利店","服装","其他连锁"];
@@ -824,6 +826,14 @@ function ReportView({ report, scores, info, onRegenerate }: {
         </div>
       )}
 
+      {/* Pain Points — 让老板觉得"在说我" */}
+      {report.painpoint && (
+        <div className="glass-card p-4 sm:p-6" style={{ borderColor: "rgba(239,68,68,0.2)" }}>
+          <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: "#ef4444" }}>⚠️ 这个阶段最容易犯的错</h3>
+          <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{report.painpoint}</p>
+        </div>
+      )}
+
       {/* Dimension Analysis */}
       <div className="glass-card p-4 sm:p-6">
         <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>维度分析 <span style={{ color: "var(--text-muted)" }}>（按得分排序）</span></h3>
@@ -871,30 +881,38 @@ function ReportView({ report, scores, info, onRegenerate }: {
         </div>
       </div>
 
-      {/* Yima Value */}
-      <div className="glass-card p-4 sm:p-6" style={{ borderColor: "rgba(192,57,43,0.2)" }}>
-        <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--brand-light)" }}>逸马如何帮到你</h3>
-        <p className="text-xs sm:text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{report.yima}</p>
+      {/* Yima Value — 具体案例，不是泛泛的"我们有方法" */}
+      <div className="glass-card p-4 sm:p-6" style={{ borderColor: "rgba(59,130,246,0.2)" }}>
+        <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--brand-light)" }}>逸马如何帮你解决这些问题</h3>
+        <p className="text-xs sm:text-sm leading-relaxed mb-4" style={{ color: "var(--text-secondary)" }}>{report.yima}</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+          {["22年连锁经验","3000+企业验证","195家推动上市","方法进入200+高校教材"].map((t) => (
+            <span key={t} className="text-[10px] px-2 py-1 rounded-full" style={{ background: "rgba(59,130,246,0.08)", color: "var(--brand-light)", border: "1px solid rgba(59,130,246,0.15)" }}>✓ {t}</span>
+          ))}
+        </div>
       </div>
 
-      {/* CTA */}
-      <div className="glass-card p-4 sm:p-6 noprint">
-        <h3 className="text-sm font-bold mb-2" style={{ color: "var(--text-primary)" }}>获取专属改进方案</h3>
-        <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>留下手机号，逸马顾问将为您定制深度解读与改进路线图。</p>
+      {/* CTA — 动态文案，基于诊断结果 */}
+      <div className="glass-card p-4 sm:p-6 noprint" style={{ borderColor: "rgba(59,130,246,0.3)", background: "linear-gradient(135deg, rgba(59,130,246,0.06), rgba(6,182,212,0.04))" }}>
+        <h3 className="text-sm font-bold mb-1" style={{ color: "var(--text-primary)" }}>让逸马顾问帮你把诊断变成行动</h3>
+        <p className="text-xs mb-4 leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+          {report.nextStep || `基于你的${scores.overall_score}分诊断结果，我们建议下一步进行针对性的深度分析。留下手机号，逸马顾问将在1个工作日内联系你，提供免费的30分钟电话解读。`}
+        </p>
         {submitted ? (
-          <div className="text-center py-3 rounded-xl" style={{ background: "rgba(16,185,129,0.1)" }}>
-            <p className="text-sm font-semibold" style={{ color: "#10b981" }}>已提交！</p>
-            <p className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>逸马顾问将在 1 个工作日内联系您</p>
+          <div className="text-center py-4 rounded-xl" style={{ background: "rgba(16,185,129,0.1)" }}>
+            <p className="text-sm font-semibold" style={{ color: "#10b981" }}>已提交，逸马顾问将尽快联系你</p>
+            <p className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>如果有紧急问题，可直接拨打 400-xxx-xxxx</p>
           </div>
         ) : (
           <div className="flex gap-2">
-            <input type="tel" value={phone} onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 11); setPhone(v); }} placeholder="请输入11位手机号"
-              className="flex-1 px-4 py-3 rounded-xl text-sm outline-none" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "var(--text-primary)" }} maxLength={11} />
+            <input type="tel" value={phone} onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 11); setPhone(v); }} placeholder="输入手机号，获取专属方案"
+              className="flex-1 px-4 py-3 rounded-xl text-sm outline-none" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "var(--text-primary)" }} maxLength={11} />
             <button onClick={handleConsult} disabled={phone.length !== 11} className="px-5 py-3 rounded-xl text-sm font-semibold transition-all shrink-0"
-              style={phone.length === 11 ? { background: "var(--brand)", color: "white" } : { background: "rgba(255,255,255,0.06)", color: "var(--text-muted)" }}>
-              预约咨询</button>
+              style={phone.length === 11 ? { background: "var(--brand)", color: "white", boxShadow: "0 0 20px rgba(59,130,246,0.3)" } : { background: "rgba(255,255,255,0.06)", color: "var(--text-muted)" }}>
+              免费解读</button>
           </div>
         )}
+        <p className="text-[10px] mt-3 text-center" style={{ color: "var(--text-muted)" }}>不收费 · 不限时 · 纯粹基于你的诊断结果做深度解读</p>
       </div>
 
       {/* Bottom actions */}
