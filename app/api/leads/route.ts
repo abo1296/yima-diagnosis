@@ -12,7 +12,8 @@
 
 export async function POST(request: Request) {
   try {
-    const body = await request.text();
+    const buf = await request.arrayBuffer();
+    const body = new TextDecoder("utf-8").decode(buf);
     const { phone, industry, storeCount, score, level, action } = JSON.parse(body);
 
     if (action === "list") {
