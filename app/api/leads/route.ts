@@ -46,7 +46,11 @@ export async function POST(request: Request) {
     const webhook = ((process.env as any)?.LEADS_WEBHOOK_URL) || ((globalThis as any)?.LEADS_WEBHOOK_URL) || WEBHOOK_URL;
     if (webhook) {
       const payload = JSON.stringify({ msg_type: "text", content: { text: `\u{1F4DE}\u65b0\u7ebf\u7d22\n\u624b\u673a\uff1a${phone}\n\u884c\u4e1a\uff1a${industry||"-"}\n\u95e8\u5e97\uff1a${storeCount||"-"}\n\u5f97\u5206\uff1a${score||"-"}\uff08${level||"-"}\uff09` } });
-      try { await fetch(webhook, { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }); } catch {}
+      // unescape(encodeURIComponent) 是 JS 中最可靠的 UTF-8 字节编码方式
+      const utf8Str = unescape(encodeURIComponent(payload));
+      const bytes = new Uint8Array(utf8Str.length);
+      for (let i = 0; i < utf8Str.length; i++) bytes[i] = utf8Str.charCodeAt(i);
+      try { await fetch(webhook, { method: "POST", headers: { "Content-Type": "application/json; charset=utf-8" }, body: bytes }); } catch {}
     }
 
     console.log(`[LEAD] ${phone} ${industry} ${storeCount} ${score} ${level}`);
