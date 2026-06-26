@@ -20,7 +20,16 @@ jobs:
         run: npx opennextjs-cloudflare build
 
       - name: Patch UTF-8 body corruption
-        run: node -e "const fs=require('fs');const path=require('path');function walk(dir){for(const f of fs.readdirSync(dir)){const p=path.join(dir,f);if(fs.statSync(p).isDirectory()){if(!f.startsWith('.'))walk(p)}else if(f.endsWith('.js')||f.endsWith('.mjs')){const c=fs.readFileSync(p,'utf8');if(c.includes('delete req.body')){fs.writeFileSync(p,c.replace('delete req.body','// PATCHED: delete req.body'),'utf8');console.log('Patched:',p)}}}}walk('.open-next')"
+        run: |
+          find .open-next -type f -name "*.js" | xargs grep -l "delete req.body" > /tmp/patch_files.txt 2>/dev/null || true
+          if [ -s /tmp/patch_files.txt ]; then
+            while IFS= read -r f; do
+              echo "Patching: $f"
+              sed -i 's/delete req.body/\/\/ patched: delete req.body/' "$f"
+            done < /tmp/patch_files.txt
+          else
+            echo "No files to patch"
+          fi
 
       - name: Inject KV binding
         run: node -e "const f=require('fs');const c=JSON.parse(f.readFileSync('wrangler.jsonc','utf8'));c.kv_namespaces=[{binding:'YIMA_LEADS',id:'79c7a651e94d42bd88cc125be8940373'}];f.writeFileSync('wrangler.jsonc',JSON.stringify(c,null,'\t'))"
