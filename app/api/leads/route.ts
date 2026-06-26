@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       }));
     }
 
-    const webhook = (process.env as any).LEADS_WEBHOOK_URL;
+    const webhook = ((process.env as any)?.LEADS_WEBHOOK_URL) || ((globalThis as any)?.LEADS_WEBHOOK_URL);
     if (webhook) {
       try { await fetch(webhook, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ msgtype: "text", text: { content: `📞新线索\n手机：${phone}\n行业：${industry||"-"}\n门店：${storeCount||"-"}\n得分：${score||"-"}（${level||"-"}）` } }) }); } catch {}
     }
