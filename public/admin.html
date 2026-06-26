@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>逸马诊断 - 线索管理</title>
+<style>
+  * { margin:0;padding:0;box-sizing:border-box }
+  body { background:#0a0a0f;color:#e0e0e0;font-family:Arial,Helvetica,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center }
+  .wrap { max-width:400px;width:100%;padding:24px }
+  h1 { font-size:20px;margin-bottom:16px;text-align:center }
+  input { width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#e0e0e0;font-size:14px;margin-bottom:12px;outline:none }
+  button { width:100%;padding:12px;border-radius:12px;background:#c0392b;color:white;font-size:14px;font-weight:600;border:none;cursor:pointer }
+  button:active { opacity:0.8 }
+  .info { padding:16px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);margin-top:16px }
+  .info p { font-size:13px;color:#888;margin-bottom:8px }
+  .info code { font-size:12px;display:block;padding:12px;border-radius:8px;background:rgba(255,255,255,0.04);color:#d4a853;word-break:break-all }
+  .back { font-size:12px;color:#666;text-align:center;margin-top:16px }
+  .back a { color:#c0392b;text-decoration:none }
+</style>
+</head>
+<body>
+<div class="wrap" id="login">
+  <h1>线索管理</h1>
+  <input type="password" id="pw" placeholder="输入密码"/>
+  <button onclick="doLogin()">登录</button>
+</div>
+<div class="wrap" id="panel" style="display:none">
+  <h1>咨询线索</h1>
+  <div class="info">
+    <p>查看方式：Cloudflare 控制台 → Workers & Pages → yima-diagnosis → Logs</p>
+    <p>搜索 <code style="display:inline;padding:2px 6px;background:rgba(255,255,255,0.06)">[LEAD]</code> 即可查看所有线索</p>
+    <p style="margin-top:12px">每条日志格式：</p>
+    <code>[LEAD] 手机号 行业 门店数 得分 等级</code>
+  </div>
+  <p class="back"><a href="/">← 返回首页</a></p>
+</div>
+<script>
+function doLogin(){
+  if(document.getElementById('pw').value==='yima2024'){
+    document.getElementById('login').style.display='none';
+    document.getElementById('panel').style.display='block';
+    sessionStorage.setItem('admin_auth','1');
+  }
+}
+(function(){
+  if(sessionStorage.getItem('admin_auth')==='1'){
+    document.getElementById('login').style.display='none';
+    document.getElementById('panel').style.display='block';
+  }
+})();
+</script>
+</body>
+</html>
