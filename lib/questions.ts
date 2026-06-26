@@ -136,6 +136,114 @@ export const genericQuestions: Question[] = [
   { id:"culture_8", dimension:"culture", dimensionLabel:"企业文化", text:"企业文化是否有仪式感？", options:[
     {value:0,label:"完全没有"},{value:1,label:"有一些活动但不定期"},{value:2,label:"有固定的文化活动/晨会/表彰/周年庆等仪式，员工参与感强"}]
   },
+
+  // ===== 运营标准化（8题通用版，无行业定制的场景使用）=====
+  { id:"operation_1", dimension:"operation", dimensionLabel:"运营标准化", text:"你们有书面的运营标准手册（SOP）吗？", options:[
+    {value:0,label:"没有，全靠口头和经验传授"},{value:1,label:"有基础SOP但覆盖不全"},{value:2,label:"全岗位SOP覆盖完整，定期更新迭代"}]
+  },
+  { id:"operation_2", dimension:"operation", dimensionLabel:"运营标准化", text:"同一项服务/产品在不同门店的体验一致吗？", options:[
+    {value:0,label:"差异化很大，各店各凭本事"},{value:1,label:"核心项目能做到大致一致但细节有差距"},{value:2,label:"全门店体验一致，消费者感知不到差异"}]
+  },
+  { id:"operation_3", dimension:"operation", dimensionLabel:"运营标准化", text:"新开一家店的标准化程度如何？", options:[
+    {value:0,label:"每次开新店都不一样，靠运气"},{value:1,label:"有开店checklist但每次都有意外"},{value:2,label:"标准化开店手册，周期固定，新店首月即达标"}]
+  },
+  { id:"operation_4", dimension:"operation", dimensionLabel:"运营标准化", text:"门店日常管理有标准化流程吗？", options:[
+    {value:0,label:"全靠店长自觉"},{value:1,label:"有基本制度但执行差异大"},{value:2,label:"关键流程系统化，店长精力从救火转向经营"}]
+  },
+  { id:"operation_5", dimension:"operation", dimensionLabel:"运营标准化", text:"产品/服务结构是否稳定？变动有依据吗？", options:[
+    {value:0,label:"老板拍脑袋决定"},{value:1,label:"有流程但数据支撑不足"},{value:2,label:"数据结构化驱动产品优化和汰换"}]
+  },
+  { id:"operation_6", dimension:"operation", dimensionLabel:"运营标准化", text:"门店空间体验是统一的吗？", options:[
+    {value:0,label:"每家店不一样"},{value:1,label:"有VI手册但执行差异大"},{value:2,label:"完整SI体系+分级空间标准+模块化复制"}]
+  },
+  { id:"operation_7", dimension:"operation", dimensionLabel:"运营标准化", text:"核心人员离职后门店能正常运转吗？", options:[
+    {value:0,label:"核心人员离职=门店瘫痪"},{value:1,label:"有副手制度但过渡期较长"},{value:2,label:"标准化体系+人才储备池，系统大于个人"}]
+  },
+  { id:"operation_8", dimension:"operation", dimensionLabel:"运营标准化", text:"运营标准如何持续优化？", options:[
+    {value:0,label:"标准定了就不改"},{value:1,label:"年度修订但不系统"},{value:2,label:"数据驱动+标杆门店萃取+定期迭代推送到所有门店"}]
+  },
+
+  // ===== 供应链（8题通用版）=====
+  { id:"supply_chain_1", dimension:"supply_chain", dimensionLabel:"供应链", text:"采购模式是怎样的？", options:[
+    {value:0,label:"各店自行采购，供应商五花八门"},{value:1,label:"核心品类集采，边缘品类自采"},{value:2,label:"全品类集采+战略供应商绑定，成本领先"}]
+  },
+  { id:"supply_chain_2", dimension:"supply_chain", dimensionLabel:"供应链", text:"产品/原料质量如何保证？", options:[
+    {value:0,label:"靠供应商自觉"},{value:1,label:"有验收标准但抽检为主"},{value:2,label:"全链路品控+批次可追溯+不合格自动拒收"}]
+  },
+  { id:"supply_chain_3", dimension:"supply_chain", dimensionLabel:"供应链", text:"仓储和配送体系是怎样的？", options:[
+    {value:0,label:"供应商直送，没有统一仓配"},{value:1,label:"有中心仓覆盖核心区域"},{value:2,label:"多级多温仓配体系，覆盖半径200km，配送准时"}]
+  },
+  { id:"supply_chain_4", dimension:"supply_chain", dimensionLabel:"供应链", text:"缺货/积压情况如何？", options:[
+    {value:0,label:"经常缺货也经常积压"},{value:1,label:"有进销存但补货靠经验"},{value:2,label:"AI预测+自动补货，缺货率和积压率都低"}]
+  },
+  { id:"supply_chain_5", dimension:"supply_chain", dimensionLabel:"供应链", text:"供应链成本有优势吗？", options:[
+    {value:0,label:"没算过，或明显高于同行"},{value:1,label:"在行业均值范围内"},{value:2,label:"规模集采使成本率低于同行，且差距在拉大"}]
+  },
+  { id:"supply_chain_6", dimension:"supply_chain", dimensionLabel:"供应链", text:"核心原料/产品有卡脖子风险吗？", options:[
+    {value:0,label:"严重依赖单一供应商"},{value:1,label:"多个供应商可切换但稳定性存风险"},{value:2,label:"自有产能/自有品牌+多品牌组合+上游参股保障供应安全"}]
+  },
+  { id:"supply_chain_7", dimension:"supply_chain", dimensionLabel:"供应链", text:"进入新市场供应链能跟得上吗？", options:[
+    {value:0,label:"供应链是扩张最大瓶颈"},{value:1,label:"能覆盖但周期长成本高"},{value:2,label:"仓配网络可快速复制，新市场短期内供应链就位"}]
+  },
+  { id:"supply_chain_8", dimension:"supply_chain", dimensionLabel:"供应链", text:"供应链数字化程度？", options:[
+    {value:0,label:"全靠电话/微信/Excel"},{value:1,label:"有基础系统但数据不打通"},{value:2,label:"全链路数字化+库存可视化+AI预测补货"}]
+  },
+
+  // ===== 数字化（8题通用版）=====
+  { id:"digital_1", dimension:"digital", dimensionLabel:"数字化", text:"系统覆盖情况？", options:[
+    {value:0,label:"基本没有数字化"},{value:1,label:"有基础收银+简单会员系统"},{value:2,label:"核心系统覆盖较全"}]
+  },
+  { id:"digital_2", dimension:"digital", dimensionLabel:"数字化", text:"系统之间数据打通了吗？", options:[
+    {value:0,label:"各系统孤岛，数据对不上"},{value:1,label:"部分打通但数据偶尔不一致"},{value:2,label:"核心系统数据互通，总部看板实时汇总"}]
+  },
+  { id:"digital_3", dimension:"digital", dimensionLabel:"数字化", text:"数据驱动决策的程度？", options:[
+    {value:0,label:"纯凭经验"},{value:1,label:"月底看报表，日常靠经验"},{value:2,label:"实时数据看板+异常预警，数据驱动日常决策"}]
+  },
+  { id:"digital_4", dimension:"digital", dimensionLabel:"数字化", text:"消费者端数字化程度？", options:[
+    {value:0,label:"纯线下，没有线上触点"},{value:1,label:"有线上但运营不够"},{value:2,label:"完整会员体系+精准营销+私域运营"}]
+  },
+  { id:"digital_5", dimension:"digital", dimensionLabel:"数字化", text:"数字化投入力度？", options:[
+    {value:0,label:"基本没投入"},{value:1,label:"用了些工具但零散"},{value:2,label:"有数字化预算+专职团队，是战略级投入"}]
+  },
+  { id:"digital_6", dimension:"digital", dimensionLabel:"数字化", text:"线上业务占比？", options:[
+    {value:0,label:"没做线上"},{value:1,label:"有线上但占比低且运营粗放"},{value:2,label:"线上占比高+精细化运营+线上线下打通"}]
+  },
+  { id:"digital_7", dimension:"digital", dimensionLabel:"数字化", text:"实时数据可见度？", options:[
+    {value:0,label:"月底才能看到汇总"},{value:1,label:"次日能看到昨日数据"},{value:2,label:"实时看板+可下钻到单品/门店/时段"}]
+  },
+  { id:"digital_8", dimension:"digital", dimensionLabel:"数字化", text:"行业数字化水平自评？", options:[
+    {value:0,label:"低于行业平均"},{value:1,label:"跟大部分同行差不多"},{value:2,label:"数字化是竞争加分项"}]
+  },
+
+  // ===== 商业模式（2题通用补充）=====
+  { id:"model_7", dimension:"model", dimensionLabel:"商业模式", text:"收费/定价模式是否清晰？", options:[
+    {value:0,label:"没有明确模式，市场决定"},{value:1,label:"有基本定价但缺乏科学依据"},{value:2,label:"科学定价+动态调整+数据反馈"}]
+  },
+  { id:"model_8", dimension:"model", dimensionLabel:"商业模式", text:"是否有多元收入来源？", options:[
+    {value:0,label:"只有单一收入来源"},{value:1,label:"有辅助收入但不稳定"},{value:2,label:"收入结构多元化且比例合理"}]
+  },
+
+  // ===== 培训体系（3题通用补充）=====
+  { id:"training_6", dimension:"training", dimensionLabel:"培训体系", text:"关键岗位有认证体系吗？", options:[
+    {value:0,label:"没有"},{value:1,label:"有简单认证但不系统"},{value:2,label:"完整认证体系+与晋升和薪酬挂钩"}]
+  },
+  { id:"training_7", dimension:"training", dimensionLabel:"培训体系", text:"培训资源投入？", options:[
+    {value:0,label:"几乎没有投入"},{value:1,label:"有基本投入但不够"},{value:2,label:"培训是核心投资，有专职团队和独立预算"}]
+  },
+  { id:"training_8", dimension:"training", dimensionLabel:"培训体系", text:"远程/线上培训能力？", options:[
+    {value:0,label:"没有线上培训"},{value:1,label:"有简单录播课程"},{value:2,label:"系统化线上学习平台+直播培训+学习数据追踪"}]
+  },
+
+  // ===== 督导体系（3题通用补充）=====
+  { id:"supervision_6", dimension:"supervision", dimensionLabel:"督导体系", text:"督导覆盖频率？", options:[
+    {value:0,label:"不定期，看情况"},{value:1,label:"月度为周期"},{value:2,label:"有明确分级频次+重点门店加密"}]
+  },
+  { id:"supervision_7", dimension:"supervision", dimensionLabel:"督导体系", text:"是否有第三方评估？", options:[
+    {value:0,label:"没有"},{value:1,label:"偶尔做但不系统"},{value:2,label:"定期第三方评估+与内部督导互相验证"}]
+  },
+  { id:"supervision_8", dimension:"supervision", dimensionLabel:"督导体系", text:"督导与培训联动？", options:[
+    {value:0,label:"督导和培训完全脱节"},{value:1,label:"有简单联动但不够紧密"},{value:2,label:"督导发现问题→培训针对性改进→复检验证闭环"}]
+  },
 ];
 
 // ========== 行业定制题（每行业 32 题，替换同名 ID 的通用题）==========
@@ -853,6 +961,7 @@ export const industryQuestions: Record<string, Question[]> = {
   "医药": 医药,
   "教育": 教育,
   "服饰": 服饰,
+  "服装": 服饰,  // alias
   "酒类": 酒类,
   "家电": 家电,
 };

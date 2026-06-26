@@ -51,8 +51,6 @@ function getLevel(score: number): string {
 
 export function getLevelColor(level: string): string {
   switch (level) {
-    case "初学者":
-      return "text-red-600 bg-red-50";
     case "成长型":
       return "text-orange-600 bg-orange-50";
     case "成熟型":
