@@ -66,6 +66,7 @@ export default function Page() {
     if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("admin")) setShowAdmin(true);
   }, []);
 
+  // admin panel: yima777.cn/?admin
   if (showAdmin) return <AdminPanel onBack={() => setShowAdmin(false)} />;
 
   useEffect(() => {
