@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useSearchParams } from "next/navigation";
 import { questions, industryWarmup } from "@/lib/questions";
 import { calculateScores } from "@/lib/scoring";
 import { DIMENSION_LABELS, DIMENSION_ORDER, type Question } from "@/lib/types";
@@ -63,11 +62,16 @@ export default function Page() {
   const [surveyStep, setSurveyStep] = useState<{ dimIdx: number; showIntro: boolean; qIdx: number }>({ dimIdx: 0, showIntro: true, qIdx: 0 });
   const [showAdmin, setShowAdmin] = useState(false);
 
-  // 检测 admin 参数
-  useEffect(() => { setShowAdmin(window.location.search.includes("admin")); }, []);
+  // 检测 #admin hash（纯客户端，不触发SSR）
+  useEffect(() => {
+    const check = () => setShowAdmin(window.location.hash.includes("admin"));
+    check();
+    window.addEventListener("hashchange", check);
+    return () => window.removeEventListener("hashchange", check);
+  }, []);
 
-  // admin panel: yima777.cn/?admin
-  if (showAdmin) return <AdminPanel onBack={() => setShowAdmin(false)} />;
+  // admin panel: yima777.cn/#admin
+  if (showAdmin) return <AdminPanel onBack={() => { setShowAdmin(false); window.location.hash = ""; }} />;
 
   useEffect(() => {
     try { const s = localStorage.getItem(STORAGE_KEY); if (s) setAnswers(JSON.parse(s)); } catch {}
