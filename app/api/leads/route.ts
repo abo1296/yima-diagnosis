@@ -1,11 +1,9 @@
 ﻿function getKV() {
   try {
-    // ES Module Worker: process.env 暴露绑定
     const env = process.env as any;
     if (env?.YIMA_LEADS?.get) return env.YIMA_LEADS;
   } catch {}
   try {
-    // 全局变量 fallback
     const g = globalThis as any;
     if (g?.YIMA_LEADS?.get) return g.YIMA_LEADS;
   } catch {}
@@ -17,10 +15,9 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { phone, industry, storeCount, score, level, action } = body;
 
-    // 查询列表
     if (action === "list") {
       const kv = getKV();
-      if (!kv) return Response.json({ error: "存储未配置，KV绑定可能未生效。请在Cloudflare控制台→Workers→yima-diagnosis→Settings→Variables→KV Namespace Bindings 中添加 YIMA_LEADS 绑定到 79c7a651e94d42bd88cc125be8940373", leads: [] }, { status: 200 });
+      if (!kv) return Response.json({ error: "存储未配置，KV绑定可能未生效。", leads: [] }, { status: 200 });
       try {
         const list = await kv.list();
         const leads: unknown[] = [];
@@ -35,7 +32,6 @@ export async function POST(request: Request) {
       }
     }
 
-    // 存线索
     if (!phone) return Response.json({ error: "手机号不能为空" }, { status: 400 });
 
     const kv = getKV();
@@ -49,8 +45,8 @@ export async function POST(request: Request) {
     const WEBHOOK_URL = "https://open.feishu.cn/open-apis/bot/v2/hook/e62aa6ed-ff47-459a-b344-b1d4a698ad55";
     const webhook = ((process.env as any)?.LEADS_WEBHOOK_URL) || ((globalThis as any)?.LEADS_WEBHOOK_URL) || WEBHOOK_URL;
     if (webhook) {
-      const text = `\u{1F4DE}\u65b0\u7ebf\u7d22\n\u624b\u673a\uff1a${phone}\n\u884c\u4e1a\uff1a${industry||"-"}\n\u95e8\u5e97\uff1a${storeCount||"-"}\n\u5f97\u5206\uff1a${score||"-"}\uff08${level||"-"}\uff09`;
-      try { await fetch(webhook, { method: "POST", headers: { "Content-Type": "application/json; charset=utf-8" }, body: new TextEncoder().encode(JSON.stringify({ msg_type: "text", content: { text } })) }); } catch {}
+      const payload = JSON.stringify({ msg_type: "text", content: { text: `\u{1F4DE}\u65b0\u7ebf\u7d22\n\u624b\u673a\uff1a${phone}\n\u884c\u4e1a\uff1a${industry||"-"}\n\u95e8\u5e97\uff1a${storeCount||"-"}\n\u5f97\u5206\uff1a${score||"-"}\uff08${level||"-"}\uff09` } });
+      try { await fetch(webhook, { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }); } catch {}
     }
 
     console.log(`[LEAD] ${phone} ${industry} ${storeCount} ${score} ${level}`);
