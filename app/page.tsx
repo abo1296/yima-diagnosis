@@ -142,7 +142,7 @@ function Welcome({ onStart }: { onStart: () => void }) {
       {/* NAVBAR */}
       <nav className={`landing-nav${scrolled ? " scrolled" : ""}`}>
         <div className="nav-brand">
-          <div className="logo-box">逸</div>
+          <img src="/logo.png" alt="逸马" className="logo-box" style={{width:34,height:34,borderRadius:10,objectFit:"cover"}} />
           <span>逸马诊断</span>
         </div>
         <ul className="nav-links">
@@ -333,7 +333,7 @@ function Welcome({ onStart }: { onStart: () => void }) {
       {/* FOOTER */}
       <footer className="landing-footer">
         <div className="footer-brand">
-          <div className="f-logo">逸</div>
+          <img src="/logo.png" alt="逸马" className="f-logo" style={{width:32,height:32,borderRadius:8,objectFit:"cover"}} />
           <h4 style={{fontSize:14,fontWeight:700,marginBottom:4}}>逸马连锁成熟度诊断</h4>
           <p>基于22年连锁咨询方法论<br />9维度全面评估体系成熟度<br />手机浏览器打开 yima777.cn 随时测</p>
         </div>
