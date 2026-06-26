@@ -34,6 +34,9 @@ export async function POST(request: Request) {
 
     if (!phone) return Response.json({ error: "phone required" }, { status: 400 });
 
+    // DEBUG: 回显收到的值，验证request.json()是否毁中文
+    return Response.json({ success: true, echo: { phone, industry, storeCount, score, level } });
+
     const kv = getKV();
     if (kv) {
       await kv.put(`lead:${Date.now()}:${phone}`, JSON.stringify({
