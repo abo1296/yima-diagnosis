@@ -1,0 +1,14 @@
+diff --git a/node_modules/@opennextjs/aws/dist/core/requestHandler.js b/node_modules/@opennextjs/aws/dist/core/requestHandler.js
+index 27e23f2..4927414 100644
+--- a/node_modules/@opennextjs/aws/dist/core/requestHandler.js
++++ b/node_modules/@opennextjs/aws/dist/core/requestHandler.js
+@@ -164,7 +164,8 @@ async function processRequest(req, res, routingResult) {
+     // @ts-ignore
+     // Next.js doesn't parse body if the property exists
+     // https://github.com/dougmoscrop/serverless-http/issues/227
+-    delete req.body;
++    // PATCHED: keep req.body to avoid workerd stream polyfill corrupting UTF-8 bytes
++    // delete req.body;
+     // Here we try to apply as much request metadata as possible
+     // We apply every metadata from `resolve-routes` https://github.com/vercel/next.js/blob/916f105b97211de50f8580f0b39c9e7c60de4886/packages/next/src/server/lib/router-utils/resolve-routes.ts
+     // and `router-server` https://github.com/vercel/next.js/blob/916f105b97211de50f8580f0b39c9e7c60de4886/packages/next/src/server/lib/router-server.ts
