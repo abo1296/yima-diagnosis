@@ -45,9 +45,9 @@ export async function POST(request: Request) {
     const WEBHOOK_URL = "https://open.feishu.cn/open-apis/bot/v2/hook/e62aa6ed-ff47-459a-b344-b1d4a698ad55";
     const webhook = ((process.env as any)?.LEADS_WEBHOOK_URL) || ((globalThis as any)?.LEADS_WEBHOOK_URL) || WEBHOOK_URL;
     if (webhook) {
-      // 纯英文 + 手动拼JSON（彻底绕开JSON.stringify，Workers里它毁中文）
-      const esc = (s: string) => String(s||"-").replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-      const payload = `{"msg_type":"text","content":{"text":"[New Lead]\\nPhone: ${esc(phone)}\\nIndustry: ${esc(industry)}\\nStores: ${esc(storeCount)}\\nScore: ${esc(score)} (${esc(level)})"}}`;
+      // 纯字符串拼接，复用之前硬编码测试成功的模式
+      const p = (s: string) => String(s||"-").replace(/"/g, '\\"').replace(/\\/g, '\\\\');
+      const payload = '{"msg_type":"text","content":{"text":"[New Lead]\\nPhone: ' + p(phone) + '\\nIndustry: ' + p(industry) + '\\nStores: ' + p(storeCount) + '\\nScore: ' + p(score) + ' (' + p(level) + ')\"}}';
       try { await fetch(webhook, { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }); } catch {}
     }
 
