@@ -81,39 +81,48 @@ export async function POST(request: Request) {
 
         if (resp.ok) {
           const data = await resp.json();
-          const text =
+          let text =
             data.content
               ?.filter((c: { type: string }) => c.type === "text")
               .map((c: { text: string }) => c.text)
               .join("") || "";
 
+          // Fallback: OpenAI-compatible format (choices[0].message.content)
+          if (!text && data.choices?.[0]?.message?.content) {
+            text = data.choices[0].message.content;
+          }
+
           // 尝试提取并修复 JSON
-          const jsonMatch = text.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            let jsonStr = jsonMatch[0];
+          // 1. 去掉 markdown 代码块标记
+          let cleanText = text.replace(/```(?:json)?\s*/gi, "").replace(/```/g, "");
+          // 2. 找到最外层 JSON
+          const start = cleanText.indexOf("{");
+          const end = cleanText.lastIndexOf("}");
+          if (start >= 0 && end > start) {
+            let jsonStr = cleanText.slice(start, end + 1);
             try {
               const report = JSON.parse(jsonStr);
               return Response.json({ report });
             } catch {
-              // JSON 修复：补缺失逗号、去尾逗号
+              // JSON 修复：去尾逗号、补缺失逗号
               try {
                 jsonStr = jsonStr
-                  .replace(/,\s*}/g, "}")           // 去对象尾逗号
-                  .replace(/,\s*]/g, "]")            // 去数组尾逗号
-                  .replace(/"\s+"/g, '","')          // 补字符串间逗号
-                  .replace(/]\s*"/g, '],"')          // 补 ]" 间逗号
-                  .replace(/}\s*{/g, "},{")          // 补对象间逗号
-                  .replace(/]\s*\[/g, "],[");        // 补数组间逗号
+                  .replace(/,\s*}/g, "}")
+                  .replace(/,\s*]/g, "]")
+                  .replace(/"\s+"/g, '","')
+                  .replace(/]\s*"/g, '],"')
+                  .replace(/}\s*\{/g, "},{")
+                  .replace(/]\s*\[/g, "],[");
                 const report = JSON.parse(jsonStr);
                 return Response.json({ report });
               } catch {
-                lastError = "AI JSON 格式异常，无法修复";
+                lastError = `AI JSON 格式异常，无法修复。原始响应前200字: ${text.slice(0, 200)}`;
               }
             }
           } else {
-            lastError = "AI 返回格式异常，未找到有效 JSON";
+            lastError = `AI 未返回 JSON，原始响应前200字: ${text.slice(0, 200)}`;
           }
-          allErrors.push(`${endpoint.url} → 格式异常`);
+          allErrors.push(`${endpoint.url} → ${lastError}`);
         } else {
           const err = await resp.text();
           lastError = `${endpoint.url} → ${resp.status}: ${err.slice(0, 200)}`;

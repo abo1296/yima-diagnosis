@@ -485,7 +485,7 @@ function SurveyFlow({ answers, saveAnswers, step, setStep, onComplete, questions
       <main className="flex-1 flex flex-col items-center justify-center px-5" style={{ minHeight: "calc(100dvh - 80px)" }}>
         <div className="w-full max-w-lg animate-slide-up" key={`${dimIdx}-${qIdx}`}>
           {/* Question */}
-          <p className="text-center font-semibold mb-10 leading-relaxed" style={{ fontSize: "18px", color: "var(--text-primary)" }}>
+          <p className="text-center font-semibold mb-10 leading-relaxed" style={{ fontSize: "20px", color: "var(--text-primary)" }}>
             {currentQ.text}
           </p>
 
@@ -549,7 +549,7 @@ function WarmupScreen({ questions: wqs, onDone }: {
       </div>
       <main className="flex-1 flex flex-col items-center justify-center px-5">
         <div className="w-full max-w-lg animate-slide-up" key={idx}>
-          <p className="text-center font-semibold mb-10 leading-relaxed" style={{ fontSize: "18px", color: "var(--text-primary)" }}>{currentQ.text}</p>
+          <p className="text-center font-semibold mb-10 leading-relaxed" style={{ fontSize: "20px", color: "var(--text-primary)" }}>{currentQ.text}</p>
           <div className="space-y-2.5">
             {currentQ.options.map((opt) => (
               <button key={opt.value} className="option-btn" onClick={() => handleSelect(opt.value, opt.label)}>
@@ -673,7 +673,7 @@ function ResultScreen({ scores, info, warmupContext, onRestart }: { scores: Retu
             <div className="load-icon-pulse">🔍</div>
           </div>
           <p style={{ marginTop: 24, fontSize: 16, color: "var(--text-secondary)", letterSpacing: 1 }}>
-            AI 正在分析你的连锁体系<span className="load-dots" />
+            逸马AI 正在分析你的连锁体系<span className="load-dots" />
           </p>
         </div>
       )}
