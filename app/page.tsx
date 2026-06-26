@@ -546,7 +546,7 @@ function ReportView({ report, scores, info, onRegenerate }: {
     // 异步提交，不阻塞 UI
     fetch("/api/leads", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone, industry: info.industry, storeCount: info.storeCount, score: scores.overall_score, level: scores.level }),
+      body: JSON.stringify({ phone, industry_code: INDUSTRIES.indexOf(info.industry), storeCount: info.storeCount, score: scores.overall_score, level: scores.level }),
     }).catch(() => {});
     setSubmitted(true);
   };
