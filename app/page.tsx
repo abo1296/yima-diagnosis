@@ -93,19 +93,48 @@ function Welcome({ onStart }: { onStart: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[100dvh] px-5 py-8" style={{ background: "var(--bg-primary)" }}>
       <div className="max-w-md w-full text-center">
-        <div className="text-4xl sm:text-5xl mb-4 opacity-80">🏬</div>
-        <h1 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>你的连锁企业，离失控还有多远？</h1>
-        <p className="text-sm sm:text-base mb-2" style={{ color: "var(--text-secondary)" }}>扩张越快，隐患越深。标准化跟不上，复制就是找死。</p>
-        <p className="text-xs mb-5" style={{ color: "var(--text-muted)" }}>逸马 22 年方法论 · 9 维度成熟度模型 · 30 分钟出报告</p>
+        {/* Logo */}
+        <img src="/logo.png" alt="逸马" className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-2xl" style={{ boxShadow: "0 0 24px rgba(192,57,43,0.15)" }} />
+
+        {/* Headline */}
+        <h1 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>你的连锁处于哪个阶段？</h1>
+        <p className="text-sm sm:text-base mb-2" style={{ color: "var(--text-secondary)" }}>开到第 30 家，还能像第 3 家一样吗？</p>
+        <p className="text-xs mb-5" style={{ color: "var(--text-muted)" }}>逸马 22 年方法论 · 覆盖 200 所高校教材 · 9 维度成熟度模型</p>
+
+        {/* How it works */}
+        <div className="grid grid-cols-3 gap-2 mb-5 text-xs">
+          {[{ step:"①", title:"填问卷", desc:"72题·15-20分钟" },
+            { step:"②", title:"出报告", desc:"9维雷达图+路线图" },
+            { step:"③", title:"免费领", desc:"PDF报告+深度咨询" }].map((s) => (
+            <div key={s.step} className="glass-card rounded-xl p-2.5" style={{ background: "rgba(255,255,255,0.03)" }}>
+              <div className="text-base mb-0.5" style={{ color: "var(--yima-red)" }}>{s.step}</div>
+              <div className="font-semibold text-[11px] mb-0.5" style={{ color: "var(--text-primary)" }}>{s.title}</div>
+              <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>{s.desc}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Dimension tags */}
         <div className="flex flex-wrap justify-center gap-1.5 mb-5 text-[11px]" style={{ color: "var(--text-muted)" }}>
           {DIMENSION_ORDER.map((d) => <span key={d} className="glass-card rounded-full px-2.5 py-0.5" style={{ background: "rgba(255,255,255,0.03)" }}>{DIMENSION_LABELS[d]}</span>)}
         </div>
-        <p className="text-xs sm:text-sm mb-5" style={{ color: "var(--text-muted)" }}>共 72 题 · 约 12 分钟 · 完全免费</p>
-        <button onClick={onStart} className="w-full py-4 rounded-xl font-semibold text-base sm:text-lg transition-all active:scale-[0.98] shadow-lg"
+
+        <p className="text-xs sm:text-sm mb-5" style={{ color: "var(--text-muted)" }}>共 72 题 · 约 15-20 分钟 · 完全免费</p>
+
+        {/* Primary CTA */}
+        <button onClick={onStart} className="w-full py-4 rounded-xl font-semibold text-base sm:text-lg transition-all active:scale-[0.98] shadow-lg mb-3"
           style={{ background: "var(--yima-red)", color: "white", boxShadow: "0 0 20px rgba(192,57,43,0.3)" }}>
           开始免费诊断
         </button>
-        <p className="text-[11px] mt-3" style={{ color: "var(--text-muted)" }}>已有 3,286 家企业完成诊断 · 答题进度自动保存</p>
+
+        {/* Secondary CTA */}
+        <a href="/share?score=78&level=成熟型" className="text-xs font-medium transition-all inline-block" style={{ color: "var(--text-secondary)", borderBottom: "1px dashed var(--text-muted)" }}>
+          先看看样本报告 →
+        </a>
+
+        <p className="text-[11px] mt-4" style={{ color: "var(--text-muted)" }}>已有 3,286 家企业完成诊断 · 答题进度自动保存</p>
+
+        {/* Social proof */}
         <div className="mt-8 pt-6" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
           <p className="text-[10px] sm:text-xs mb-3 uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>已服务客户</p>
           <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
@@ -117,6 +146,27 @@ function Welcome({ onStart }: { onStart: () => void }) {
             <span>周黑鸭</span>
           </div>
           <p className="text-[10px] mt-2" style={{ color: "var(--text-muted)" }}>3,000+ 会员企业 · 195 家已上市</p>
+        </div>
+
+        {/* FAQ */}
+        <div className="mt-8 pt-6 text-left" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <p className="text-[10px] sm:text-xs mb-3 uppercase tracking-wider text-center" style={{ color: "var(--text-muted)" }}>常见问题</p>
+          {[
+            { q: "真的免费吗？", a: "完全免费。诊断是逸马方法论的产品化，我们靠深度咨询盈利。" },
+            { q: "我的答题数据会泄露吗？", a: "数据仅用于生成你的诊断报告，不会分享给第三方。" },
+            { q: "为什么逸马要做这个？", a: "22年连锁咨询经验的产品化，让你先体验方法论的价值。" },
+          ].map((faq) => (
+            <details key={faq.q} className="mb-2 text-xs" style={{ color: "var(--text-secondary)" }}>
+              <summary className="cursor-pointer py-1 font-medium" style={{ color: "var(--text-primary)" }}>{faq.q}</summary>
+              <p className="mt-1 ml-2" style={{ color: "var(--text-muted)" }}>{faq.a}</p>
+            </details>
+          ))}
+        </div>
+
+        {/* Mobile QR hint */}
+        <div className="mt-8 pt-6 text-center" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <img src="/logo.png" alt="逸马诊断" className="w-12 h-12 mx-auto mb-2 rounded-xl opacity-70" />
+          <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>手机浏览器打开 yima777.cn 随时测</p>
         </div>
       </div>
     </div>
