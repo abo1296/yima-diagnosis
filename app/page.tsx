@@ -542,7 +542,7 @@ function ReportView({ report, scores, info, onRegenerate }: {
   const sortedDims = [...report.dimensions].sort((a, b) => a.score - b.score);
   const handlePrint = () => window.print();
   const handleConsult = async () => {
-    if (!phone) return;
+    if (phone.length !== 11 || !/^1\d{10}$/.test(phone)) return;
     // 异步提交，不阻塞 UI
     fetch("/api/leads", {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -636,10 +636,10 @@ function ReportView({ report, scores, info, onRegenerate }: {
           </div>
         ) : (
           <div className="flex gap-2">
-            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="请输入手机号"
-              className="flex-1 px-4 py-3 rounded-xl text-sm outline-none" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "var(--text-primary)" }} />
-            <button onClick={handleConsult} disabled={!phone} className="px-5 py-3 rounded-xl text-sm font-semibold transition-all shrink-0"
-              style={phone ? { background: "var(--yima-red)", color: "white" } : { background: "rgba(255,255,255,0.06)", color: "var(--text-muted)" }}>
+            <input type="tel" value={phone} onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 11); setPhone(v); }} placeholder="请输入11位手机号"
+              className="flex-1 px-4 py-3 rounded-xl text-sm outline-none" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "var(--text-primary)" }} maxLength={11} />
+            <button onClick={handleConsult} disabled={phone.length !== 11} className="px-5 py-3 rounded-xl text-sm font-semibold transition-all shrink-0"
+              style={phone.length === 11 ? { background: "var(--yima-red)", color: "white" } : { background: "rgba(255,255,255,0.06)", color: "var(--text-muted)" }}>
               预约咨询</button>
           </div>
         )}
