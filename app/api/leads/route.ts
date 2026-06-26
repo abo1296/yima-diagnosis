@@ -1,20 +1,13 @@
 function getKV() {
   try {
-    // Cloudflare Workers: global scope binding
-    // @ts-ignore
-    if (typeof YIMA_LEADS !== "undefined") return YIMA_LEADS;
+    // ES Module Worker: process.env 暴露绑定
+    const env = process.env as any;
+    if (env?.YIMA_LEADS?.get) return env.YIMA_LEADS;
   } catch {}
   try {
-    // Cloudflare Workers: process.env binding (OpenNext)
-    // @ts-ignore
-    if (typeof process !== "undefined" && process.env?.YIMA_LEADS) return process.env.YIMA_LEADS;
-  } catch {}
-  try {
-    // Cloudflare Workers: env via globalThis
-    // @ts-ignore
+    // 全局变量 fallback
     const g = globalThis as any;
-    if (g.YIMA_LEADS) return g.YIMA_LEADS;
-    if (g.env?.YIMA_LEADS) return g.env.YIMA_LEADS;
+    if (g?.YIMA_LEADS?.get) return g.YIMA_LEADS;
   } catch {}
   return null;
 }
