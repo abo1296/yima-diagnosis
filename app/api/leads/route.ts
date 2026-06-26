@@ -48,7 +48,7 @@ export async function POST(request: Request) {
 
     const webhook = ((process.env as any)?.LEADS_WEBHOOK_URL) || ((globalThis as any)?.LEADS_WEBHOOK_URL);
     if (webhook) {
-      try { await fetch(webhook, { method: "POST", headers: { "Content-Type": "application/json; charset=utf-8" }, body: JSON.stringify({ msg_type: "text", content: { text: `📞新线索\n手机：${phone}\n行业：${industry||"-"}\n门店：${storeCount||"-"}\n得分：${score||"-"}（${level||"-"}）` } }) }); } catch {}
+      try { const payload = JSON.stringify({ msg_type: "text", content: { text: `📞新线索\n手机：${phone}\n行业：${industry||"-"}\n门店：${storeCount||"-"}\n得分：${score||"-"}（${level||"-"}）` } })); await fetch(webhook, { method: "POST", headers: { "Content-Type": "application/json; charset=utf-8" }, body: new TextEncoder().encode(payload) }); } catch {}
     }
 
     console.log(`[LEAD] ${phone} ${industry} ${storeCount} ${score} ${level}`);
