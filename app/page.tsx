@@ -44,6 +44,7 @@ function buildQDimMap(qs: Question[]): Record<string, string> {
 // Types
 interface CompanyInfo { industry: string; storeCount: string; }
 interface ReportData {
+  summary?: { fatal: string; strongest: string; first: string };
   overview: { headline: string; stage: string; strength: string; risk: string };
   dimensions: { dim: string; score: number; comment: string; tips: string[] }[];
   actions: { title: string; why: string; timeline: string }[];
@@ -793,6 +794,8 @@ function ReportView({ report, scores, info, onRegenerate }: {
 }) {
   const [phone, setPhone] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [showFloatCTA, setShowFloatCTA] = useState(false);
+  const floatSentinelRef = useRef<HTMLDivElement>(null);
   const sortedDims = [...report.dimensions].sort((a, b) => a.score - b.score);
   const handlePrint = () => window.print();
   const handleConsult = async () => {
@@ -805,7 +808,18 @@ function ReportView({ report, scores, info, onRegenerate }: {
     setSubmitted(true);
   };
 
-  return (
+  // 浮底 CTA：过半屏后显示
+  useEffect(() => {
+    const el = floatSentinelRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      setShowFloatCTA(entry.isIntersecting);
+    }, { threshold: 0 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [report]);
+
+  return (<>
     <div className="space-y-4 sm:space-y-6">
       {/* Overview */}
       <div className="glass-card p-4 sm:p-6">
@@ -817,6 +831,30 @@ function ReportView({ report, scores, info, onRegenerate }: {
           <OCard icon="⚠️" label="最大风险" val={report.overview.risk} color />
         </div>
       </div>
+
+      {/* TL;DR 摘要卡 —— 老板5秒看懂 */}
+      {report.summary && (
+        <div className="glass-card p-4 sm:p-6 animate-pop-in" style={{ borderColor: "rgba(59,130,246,0.2)", background: "linear-gradient(135deg, rgba(59,130,246,0.04), rgba(6,182,212,0.02))" }}>
+          <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--brand-light)" }}>🔍 3 秒速览</h3>
+          <div className="space-y-2.5">
+            <div className="flex items-start gap-2.5">
+              <span className="text-xs shrink-0 mt-0.5" style={{ color: "#ef4444", fontWeight:700 }}>最致命</span>
+              <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{report.summary.fatal}</span>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <span className="text-xs shrink-0 mt-0.5" style={{ color: "#10b981", fontWeight:700 }}>最强项</span>
+              <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{report.summary.strongest}</span>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <span className="text-xs shrink-0 mt-0.5" style={{ color: "var(--brand-light)", fontWeight:700 }}>先做</span>
+              <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{report.summary.first}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 过半屏哨兵 — 触发浮底 CTA */}
+      <div ref={floatSentinelRef} />
 
       {/* Benchmark */}
       {report.benchmark && (
@@ -840,13 +878,15 @@ function ReportView({ report, scores, info, onRegenerate }: {
         <div className="space-y-2">
           {sortedDims.map((dim) => {
             const realScore = scores.scores[dim.dim] || dim.score;
+            const isLow = realScore < 40;
             let dot = "#ef4444"; if (realScore >= 66) dot = "#10b981"; else if (realScore >= 41) dot = "#f59e0b";
             return (
-              <details key={dim.dim} className="group">
-                <summary className="flex items-center gap-2 cursor-pointer list-none py-2 px-2 -mx-2 rounded-xl transition-colors" style={{ background: "transparent" }}>
+              <details key={dim.dim} className={`group${isLow ? " dim-alert" : ""}`} open={isLow || undefined}>
+                <summary className="flex items-center gap-2 cursor-pointer list-none py-2 px-2 -mx-2 rounded-xl transition-colors" style={{ background: isLow ? "rgba(239,68,68,0.06)" : "transparent" }}>
                   <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: dot }} />
                   <span className="text-sm font-medium w-16 shrink-0" style={{ color: "var(--text-primary)" }}>{dim.dim}</span>
                   <span className="text-sm font-bold w-7 shrink-0" style={{ color: dot }}>{realScore}</span>
+                  {isLow && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 animate-pulse" style={{ background: "rgba(239,68,68,0.15)", color: "#ef4444" }}>关注</span>}
                   <span className="text-xs truncate flex-1" style={{ color: "var(--text-secondary)" }}>{dim.comment}</span>
                   <svg className="w-4 h-4 shrink-0 group-open:rotate-180 transition-transform" fill="none" stroke="var(--text-muted)" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                 </summary>
@@ -904,13 +944,21 @@ function ReportView({ report, scores, info, onRegenerate }: {
             <p className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>如果有紧急问题，可直接拨打 400-xxx-xxxx</p>
           </div>
         ) : (
-          <div className="flex gap-2">
+          <>
+            {scores.overall_score < 45 && (
+              <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg animate-pulse" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                <span className="text-sm shrink-0">⚠️</span>
+                <span className="text-xs font-medium" style={{ color: "#ef4444" }}>你的系统性问题较多，按当前状态继续运营，6个月内出问题的概率很高。建议尽快做一次深度诊断。</span>
+              </div>
+            )}
+            <div className="flex gap-2">
             <input type="tel" value={phone} onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 11); setPhone(v); }} placeholder="输入手机号，获取专属方案"
               className="flex-1 px-4 py-3 rounded-xl text-sm outline-none" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "var(--text-primary)" }} maxLength={11} />
             <button onClick={handleConsult} disabled={phone.length !== 11} className="px-5 py-3 rounded-xl text-sm font-semibold transition-all shrink-0"
               style={phone.length === 11 ? { background: "var(--brand)", color: "white", boxShadow: "0 0 20px rgba(59,130,246,0.3)" } : { background: "rgba(255,255,255,0.06)", color: "var(--text-muted)" }}>
               免费解读</button>
           </div>
+          </>
         )}
         <p className="text-[10px] mt-3 text-center" style={{ color: "var(--text-muted)" }}>不收费 · 不限时 · 纯粹基于你的诊断结果做深度解读</p>
       </div>
@@ -941,7 +989,39 @@ function ReportView({ report, scores, info, onRegenerate }: {
         </button>
       </div>
     </div>
-  );
+
+    {/* 浮底 CTA 条 —— 过半屏后出现 */}
+    {showFloatCTA && !submitted && (
+      <div className="float-cta-bar" style={{
+        position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
+        background: "rgba(2,6,23,0.97)", backdropFilter: "blur(16px)",
+        borderTop: "1px solid rgba(59,130,246,0.15)",
+        padding: "10px 16px", paddingBottom: "max(10px, env(safe-area-inset-bottom))",
+      }}>
+        <div className="max-w-lg mx-auto flex items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold truncate" style={{ color: "var(--text-primary)" }}>
+              你的报告只看了一半——最关键的建议在下面
+            </p>
+            <p className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>
+              留手机号，逸马顾问免费为你解读完整报告
+            </p>
+          </div>
+          <input type="tel" value={phone} onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 11); setPhone(v); }}
+            placeholder="手机号" maxLength={11}
+            className="w-28 px-3 py-2 rounded-lg text-sm outline-none shrink-0"
+            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", color: "var(--text-primary)" }} />
+          <button onClick={handleConsult} disabled={phone.length !== 11}
+            className="px-3 py-2 rounded-lg text-xs font-semibold transition-all shrink-0"
+            style={phone.length === 11 ? { background: "var(--brand)", color: "white" } : { background: "rgba(255,255,255,0.06)", color: "var(--text-muted)" }}>
+            免费解读
+          </button>
+        </div>
+      </div>
+    )}
+
+    {showFloatCTA && !submitted && <div style={{ height: "72px" }} />}
+  </>);
 }
 
 function OCard({ icon, label, val, color }: { icon: string; label: string; val: string; color?: boolean }) {
