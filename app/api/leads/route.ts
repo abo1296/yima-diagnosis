@@ -45,10 +45,7 @@ export async function POST(request: Request) {
     const WEBHOOK_URL = "https://open.feishu.cn/open-apis/bot/v2/hook/e62aa6ed-ff47-459a-b344-b1d4a698ad55";
     const webhook = ((process.env as any)?.LEADS_WEBHOOK_URL) || ((globalThis as any)?.LEADS_WEBHOOK_URL) || WEBHOOK_URL;
     if (webhook) {
-      // 直接写中文（不用\u转义，Workers运行时处理\u有bug）
-      const rawText = `📞新线索\n手机：${phone}\n行业：${industry||"-"}\n门店：${storeCount||"-"}\n得分：${score||"-"}（${level||"-"}）`;
-      const safeText = rawText.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
-      const payload = '{"msg_type":"text","content":{"text":"' + safeText + '"}}';
+      const payload = JSON.stringify({ msg_type: "text", content: { text: `[New Lead]\nPhone: ${phone}\nIndustry: ${industry||"-"}\nStores: ${storeCount||"-"}\nScore: ${score} (${level||"-"})` } });
       try { await fetch(webhook, { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }); } catch {}
     }
 
