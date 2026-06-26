@@ -13,7 +13,12 @@
 export async function POST(request: Request) {
   try {
     const buf = await request.arrayBuffer();
+    const u8 = new Uint8Array(buf);
+    // 打印原始UTF-8字节（前200字节），方便在Cloudflare Logs中查看
+    const hex = Array.from(u8.slice(0, 200)).map(b => b.toString(16).padStart(2,'0')).join(' ');
+    console.log('[BODY HEX]', hex);
     const body = new TextDecoder("utf-8").decode(buf);
+    console.log('[BODY TEXT]', body);
     const { phone, industry, storeCount, score, level, action } = JSON.parse(body);
 
     if (action === "list") {
