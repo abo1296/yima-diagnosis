@@ -353,6 +353,7 @@ function ResultScreen({ scores, info, warmupContext, onRestart }: { scores: Retu
   const [error, setError] = useState("");
   const animRef = useRef(false);
   const startedRef = useRef(false);
+  const radarRef = useRef<HTMLDivElement>(null);
 
   // Score count-up
   useEffect(() => {
@@ -368,6 +369,15 @@ function ResultScreen({ scores, info, warmupContext, onRestart }: { scores: Retu
     }, 30);
     return () => clearInterval(timer);
   }, [scores.overall_score]);
+
+  // Auto-scroll to radar after score animation
+  useEffect(() => {
+    if (displayScore === scores.overall_score && radarRef.current) {
+      setTimeout(() => {
+        radarRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 500);
+    }
+  }, [displayScore, scores.overall_score]);
 
   // Auto-generate AI report
   useEffect(() => {
@@ -424,7 +434,7 @@ function ResultScreen({ scores, info, warmupContext, onRestart }: { scores: Retu
 
       <div className="mx-auto max-w-2xl px-4 sm:px-4 pb-12">
         {/* Radar + Scores */}
-        <div className="glass-card p-4 sm:p-6 mb-6">
+        <div className="glass-card p-4 sm:p-6 mb-6" ref={radarRef}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>各维度得分</h3>
             <button onClick={() => {
@@ -531,7 +541,15 @@ function ReportView({ report, scores, info, onRegenerate }: {
   const [submitted, setSubmitted] = useState(false);
   const sortedDims = [...report.dimensions].sort((a, b) => a.score - b.score);
   const handlePrint = () => window.print();
-  const handleConsult = () => { if (!phone) return; setSubmitted(true); };
+  const handleConsult = async () => {
+    if (!phone) return;
+    // 异步提交，不阻塞 UI
+    fetch("/api/leads", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, industry: info.industry, storeCount: info.storeCount, score: scores.overall_score, level: scores.level }),
+    }).catch(() => {});
+    setSubmitted(true);
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
