@@ -60,6 +60,13 @@ export default function Page() {
   const [scores, setScores] = useState<ReturnType<typeof calculateScores> | null>(null);
   // Survey: dimension transition or question index within dimension
   const [surveyStep, setSurveyStep] = useState<{ dimIdx: number; showIntro: boolean; qIdx: number }>({ dimIdx: 0, showIntro: true, qIdx: 0 });
+  const [showAdmin, setShowAdmin] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("admin")) setShowAdmin(true);
+  }, []);
+
+  if (showAdmin) return <AdminPanel onBack={() => setShowAdmin(false)} />;
 
   useEffect(() => {
     try { const s = localStorage.getItem(STORAGE_KEY); if (s) setAnswers(JSON.parse(s)); } catch {}
@@ -666,6 +673,52 @@ function OCard({ icon, label, val, color }: { icon: string; label: string; val: 
     <div className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${border}` }}>
       <p className="text-[10px] mb-1" style={{ color: "var(--text-muted)" }}>{icon} {label}</p>
       <p className="text-xs font-medium leading-snug" style={{ color: "var(--text-primary)" }}>{val}</p>
+    </div>
+  );
+}
+
+function AdminPanel({ onBack }: { onBack: () => void }) {
+  const [password, setPassword] = useState("");
+  const [authed, setAuthed] = useState(false);
+
+  const handleLogin = () => {
+    if (password === "yima2024") { setAuthed(true); sessionStorage.setItem("admin_auth", "1"); }
+  };
+
+  if (!authed) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen px-5" style={{ background: "var(--bg-primary)" }}>
+        <div className="max-w-sm w-full">
+          <button onClick={onBack} className="text-xs mb-6" style={{ color: "var(--text-muted)" }}>← 返回首页</button>
+          <h1 className="text-xl font-bold mb-4 text-center" style={{ color: "var(--text-primary)" }}>线索管理</h1>
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="输入密码" className="w-full px-4 py-3 rounded-xl text-sm mb-3" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "var(--text-primary)" }} />
+          <button onClick={handleLogin} className="w-full py-3 rounded-xl text-sm font-semibold" style={{ background: "var(--yima-red)", color: "white" }}>登录</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen px-5 py-8" style={{ background: "var(--bg-primary)" }}>
+      <div className="max-w-2xl mx-auto">
+        <button onClick={onBack} className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>← 返回首页</button>
+        <h1 className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>咨询线索</h1>
+        <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>
+          查看方式：Cloudflare 控制台 → Workers & Pages → yima-diagnosis → Logs<br/>
+          搜索 <code style={{ color: "var(--yima-gold)" }}>[LEAD]</code> 即可看到所有线索
+        </p>
+        <div className="glass-card p-4">
+          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+            每条线索日志格式：
+          </p>
+          <code className="text-xs mt-2 block p-3 rounded-lg" style={{ background: "rgba(255,255,255,0.04)", color: "var(--yima-gold)" }}>
+            [LEAD] 手机号 行业 门店数 得分 等级
+          </code>
+          <p className="text-xs mt-4" style={{ color: "var(--text-muted)" }}>
+            提示：配置 LEADS_WEBHOOK_URL 环境变量可实时推送到飞书/钉钉群
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
