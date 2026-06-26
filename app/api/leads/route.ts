@@ -46,9 +46,18 @@ export async function POST(request: Request) {
     const webhook = ((process.env as any)?.LEADS_WEBHOOK_URL) || ((globalThis as any)?.LEADS_WEBHOOK_URL) || WEBHOOK_URL;
     if (webhook) {
       const text = `\u{1F4DE}\u65b0\u7ebf\u7d22\n\u624b\u673a\uff1a${phone}\n\u884c\u4e1a\uff1a${industry||"-"}\n\u95e8\u5e97\uff1a${storeCount||"-"}\n\u5f97\u5206\uff1a${score||"-"}\uff08${level||"-"}\uff09`;
+      // JSON.stringify the object, then escape all non-ASCII chars to \uXXXX
       const payload = JSON.stringify({ msg_type: "text", content: { text } });
-      const blob = new Blob([payload], { type: "application/json" });
-      try { await fetch(webhook, { method: "POST", body: blob }); } catch {}
+      const asciiPayload = payload.replace(/[^\x00-\x7F]/g, (ch: string) => {
+        const cp = ch.codePointAt(0)!;
+        if (cp > 0xFFFF) {
+          const hi = Math.floor((cp - 0x10000) / 0x400) + 0xD800;
+          const lo = ((cp - 0x10000) % 0x400) + 0xDC00;
+          return '\\u' + hi.toString(16).padStart(4, '0') + '\\u' + lo.toString(16).padStart(4, '0');
+        }
+        return '\\u' + cp.toString(16).padStart(4, '0');
+      });
+      try { await fetch(webhook, { method: "POST", headers: { "Content-Type": "application/json" }, body: new TextEncoder().encode(asciiPayload) }); } catch {}
     }
 
     return Response.json({ success: true, kv: !!kv });
