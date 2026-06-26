@@ -16,6 +16,15 @@ jobs:
 
       - run: npm ci
 
+      - name: Inject Cloudflare credentials
+        env:
+          CF_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+          CF_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
+        run: |
+          sed -i "s#__CF_ACCOUNT_ID__#7d28e78cd333b311a73ef48b0f068019#g" app/api/leads/route.ts
+          sed -i "s#__CF_API_KEY__#$CF_API_KEY#g" app/api/leads/route.ts
+          sed -i "s#__CF_EMAIL__#$CF_EMAIL#g" app/api/leads/route.ts
+
       - name: OpenNext Build
         run: npx opennextjs-cloudflare build
 

@@ -1,13 +1,28 @@
-function getKV() {
-  try {
-    const env = process.env as any;
-    if (env?.YIMA_LEADS?.get) return env.YIMA_LEADS;
-  } catch {}
-  try {
-    const g = globalThis as any;
-    if (g?.YIMA_LEADS?.get) return g.YIMA_LEADS;
-  } catch {}
-  return null;
+// Cloudflare KV REST API credentials (CI注入)
+const CF_ACCOUNT = "__CF_ACCOUNT_ID__";
+const CF_API_KEY = "__CF_API_KEY__";
+const CF_EMAIL = "__CF_EMAIL__";
+const CF_KV = "79c7a651e94d42bd88cc125be8940373";
+const CF_API = "https://api.cloudflare.com/client/v4/accounts";
+const CF_HEADERS = { "X-Auth-Key": CF_API_KEY, "X-Auth-Email": CF_EMAIL };
+
+async function kvPut(key: string, value: string) {
+  const url = `${CF_API}/${CF_ACCOUNT}/storage/kv/namespaces/${CF_KV}/values/${encodeURIComponent(key)}`;
+  await fetch(url, { method: "PUT", headers: CF_HEADERS, body: value });
+}
+
+async function kvList() {
+  const url = `${CF_API}/${CF_ACCOUNT}/storage/kv/namespaces/${CF_KV}/keys`;
+  const res = await fetch(url, { headers: CF_HEADERS });
+  const data: any = await res.json();
+  return data.result || [];
+}
+
+async function kvGet(key: string) {
+  const url = `${CF_API}/${CF_ACCOUNT}/storage/kv/namespaces/${CF_KV}/values/${encodeURIComponent(key)}`;
+  const res = await fetch(url, { headers: CF_HEADERS });
+  if (!res.ok) return null;
+  return await res.text();
 }
 
 export async function POST(request: Request) {
@@ -27,18 +42,16 @@ export async function POST(request: Request) {
     const STORE_NAME: Record<number, string> = { 0: "1-10家", 1: "11-50家", 2: "51-200家", 3: "200家以上" };
     const storeName = STORE_NAME[store_code] || storeCount || storeCode || "-";
 
-    // 根据分数重算等级（中文level入参被OpenNext毁了，用ASCII分数重算）
+    // 根据分数重算等级
     const numScore = parseInt(score) || 0;
     const levelName = numScore <= 65 ? "成长型" : numScore <= 85 ? "成熟型" : "领先型";
 
     if (action === "list") {
-      const kv = getKV();
-      if (!kv) return Response.json({ error: "KV not available", leads: [] }, { status: 200 });
       try {
-        const list = await kv.list();
+        const keys = await kvList();
         const leads: unknown[] = [];
-        for (const key of list.keys) {
-          const val = await kv.get(key.name);
+        for (const k of keys) {
+          const val = await kvGet(k.name);
           if (val) leads.push(JSON.parse(val));
         }
         leads.sort((a: any, b: any) => b.time?.localeCompare(a.time || "") || 0);
@@ -50,14 +63,13 @@ export async function POST(request: Request) {
 
     if (!phone) return Response.json({ error: "phone required" }, { status: 400 });
 
-    const kv = getKV();
-    if (kv) {
-      await kv.put(`lead:${Date.now()}:${phone}`, JSON.stringify({
-        phone, industry: industryName, storeCount: storeName,
-        score: score || "", level: levelName, time: new Date().toISOString()
-      }));
-    }
+    // 存线索
+    await kvPut(`lead:${Date.now()}:${phone}`, JSON.stringify({
+      phone, industry: industryName, storeCount: storeName,
+      score: score || "", level: levelName, time: new Date().toISOString()
+    }));
 
+    // 飞书通知
     const WEBHOOK_URL = "https://open.feishu.cn/open-apis/bot/v2/hook/e62aa6ed-ff47-459a-b344-b1d4a698ad55";
     const webhook = ((process.env as any)?.LEADS_WEBHOOK_URL) || ((globalThis as any)?.LEADS_WEBHOOK_URL) || WEBHOOK_URL;
     if (webhook) {
@@ -68,7 +80,7 @@ export async function POST(request: Request) {
       try { await fetch(webhook, { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }); } catch {}
     }
 
-    return Response.json({ success: true, kv: !!kv });
+    return Response.json({ success: true, kv: true });
   } catch (e: unknown) {
     return Response.json({ error: (e as Error).message }, { status: 500 });
   }
