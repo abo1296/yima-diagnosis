@@ -103,6 +103,7 @@ function Welcome({ onStart }: { onStart: () => void }) {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [trustNums, setTrustNums] = useState([0,0,0,0]);
   const [reportBars, setReportBars] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const heroCardRef = useRef<HTMLDivElement>(null);
   const reportRef = useRef<HTMLDivElement>(null);
   const trustRef = useRef<HTMLDivElement>(null);
@@ -190,8 +191,11 @@ function Welcome({ onStart }: { onStart: () => void }) {
           <img src="/logo.png" alt="逸马" className="logo-img" />
           逸马诊断
         </div>
-        <ul className="nav-links">
-          <li><a href="#how">诊断流程</a></li><li><a href="#model">9维模型</a></li><li><a href="#report">样本报告</a></li><li><a href="#clients">服务客户</a></li><li><a href="#faq">FAQ</a></li>
+        <button className="hamburger-btn" onClick={() => setMenuOpen(!menuOpen)} aria-label="菜单">
+          {menuOpen ? "✕" : "☰"}
+        </button>
+        <ul className={`nav-links${menuOpen ? " open" : ""}`}>
+          <li><a href="#how" onClick={() => setMenuOpen(false)}>诊断流程</a></li><li><a href="#model" onClick={() => setMenuOpen(false)}>9维模型</a></li><li><a href="#report" onClick={() => setMenuOpen(false)}>样本报告</a></li><li><a href="#clients" onClick={() => setMenuOpen(false)}>服务客户</a></li><li><a href="#faq" onClick={() => setMenuOpen(false)}>FAQ</a></li>
         </ul>
         <button onClick={onStart} className="nav-cta">开始诊断</button>
       </nav>

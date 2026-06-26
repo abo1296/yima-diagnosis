@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "逸马连锁成熟度诊断",
-  description: "基于逸马22年连锁咨询方法论，9大维度全面评估连锁体系成熟度。免费诊断，30分钟出报告。",
+  description: "基于逸马22年连锁咨询方法论，9大维度全面评估连锁体系成熟度。免费诊断，15-20分钟出报告。",
   openGraph: {
     title: "逸马连锁成熟度诊断 - 免费评估你的连锁体系",
     description: "9大维度全面评估你的连锁体系成熟度，15-20分钟完成，即时出报告。3,000+企业已体验。",
