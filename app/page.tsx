@@ -82,7 +82,7 @@ export default function Page() {
 
   const handleRestart = () => {
     setAnswers({}); setScores(null); setInfo({ industry: "", storeCount: "" });
-    setSurveyStep({ dimIdx: 0, showIntro: true, qIdx: 0 }); setPhase("welcome");
+    setWarmupAnswers(""); setSurveyStep({ dimIdx: 0, showIntro: true, qIdx: 0 }); setPhase("welcome");
     localStorage.removeItem(STORAGE_KEY);
   };
 
@@ -601,7 +601,7 @@ function CompleteScreen({ scores, onSubmit }: { scores: ReturnType<typeof calcul
       <div className="text-center animate-pop-in">
         <div className="text-5xl mb-4">✓</div>
         <h2 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>诊断完成</h2>
-        <p className="text-sm mb-8" style={{ color: "var(--text-secondary)" }}>72 题全部完成，查看你的连锁成熟度报告</p>
+        <p className="text-sm mb-8" style={{ color: "var(--text-secondary)" }}>全部题目完成，查看你的连锁成熟度报告</p>
         <button onClick={onSubmit} className="animate-breathe px-10 py-4 rounded-xl font-bold text-base transition-all"
           style={{ background: "linear-gradient(135deg,#3B82F6,#2563EB)", color:"#fff", boxShadow:"0 0 20px rgba(59,130,246,0.3)" }}>
           查看我的诊断报告 →
@@ -1098,7 +1098,6 @@ function NewReportView({ scores, report, error, info, barsAnimated, onRestart }:
         </div>
       </div>
 
-      {/* Sentinel for float CTA */}
       {/* ===== Footer ===== */}
       <footer style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--text-muted)", paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.04)", flexWrap: "wrap", gap: 8 }}>
         <span>© 2026 逸马诊断 yima777.cn</span>
