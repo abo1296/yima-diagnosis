@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "yima-diagnosis",
+  "compatibility_date": "2026-06-25",
+  "compatibility_flags": ["nodejs_compat"],
+  "kv_namespaces": [
+    {
+      "binding": "YIMA_LEADS",
+      "id": "79c7a651e94d42bd88cc125be8940373"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}
