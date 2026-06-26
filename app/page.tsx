@@ -106,7 +106,7 @@ function Welcome({ onStart }: { onStart: () => void }) {
     const nodes: { x:number; y:number; vx:number; vy:number; r:number }[] = [];
     const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
     resize(); window.addEventListener("resize", resize);
-    for (let i = 0; i < 50; i++) nodes.push({ x:Math.random()*canvas.width, y:Math.random()*canvas.height, vx:(Math.random()-.5)*0.3, vy:(Math.random()-.5)*0.3, r:Math.random()*2+1 });
+    for (let i = 0; i < 60; i++) nodes.push({ x:Math.random()*canvas.width, y:Math.random()*canvas.height, vx:(Math.random()-.5)*0.4, vy:(Math.random()-.5)*0.4, r:Math.random()*2+1 });
     const onMove = (e:MouseEvent) => { mouseX = e.clientX; mouseY = e.clientY; };
     window.addEventListener("mousemove", onMove);
     const animate = () => {
@@ -122,7 +122,7 @@ function Welcome({ onStart }: { onStart: () => void }) {
         if (n.x<0) n.x=canvas.width; if (n.x>canvas.width) n.x=0;
         if (n.y<0) n.y=canvas.height; if (n.y>canvas.height) n.y=0;
         const dx=n.x-mouseX, dy=n.y-mouseY, dist=Math.sqrt(dx*dx+dy*dy);
-        if (dist<200) { n.x+=dx/dist*0.6; n.y+=dy/dist*0.6; }
+        if (dist<200) { n.x+=dx/dist*0.8; n.y+=dy/dist*0.8; }
         ctx.beginPath(); ctx.arc(n.x,n.y,n.r,0,Math.PI*2); ctx.fillStyle="rgba(96,165,250,0.5)"; ctx.fill();
       });
       animId = requestAnimationFrame(animate);
@@ -265,19 +265,20 @@ function Welcome({ onStart }: { onStart: () => void }) {
               {DIMENSION_ORDER.map((d,i) => <span key={d} className={`model-tag${i===0?" active":""}`} title={DIMENSION_TIPS[d]}>{["🎯","💰","📋","👥","🔗","📚","✅","💻","🏛"][i]} {DIMENSION_LABELS[d]}</span>)}
             </div>
             <div className="reveal" style={{display:"flex",justifyContent:"center"}}>
-              <svg viewBox="0 0 220 220" width="100%" style={{maxWidth:360}}>
+              <svg viewBox="0 0 220 220" width="100%" style={{maxWidth:380}}>
                 <defs>
-                  <radialGradient id="rg2" cx="50%" cy="50%"><stop offset="0%" stopColor="#3B82F6" stopOpacity="0.08"/><stop offset="100%" stopColor="transparent"/></radialGradient>
-                  <linearGradient id="rf2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#3B82F6" stopOpacity="0.3"/><stop offset="100%" stopColor="#06B6D4" stopOpacity="0.1"/></linearGradient>
+                  <radialGradient id="radarGlow" cx="50%" cy="50%"><stop offset="0%" stopColor="#3B82F6" stopOpacity="0.08"/><stop offset="100%" stopColor="transparent"/></radialGradient>
+                  <linearGradient id="radarFill" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#3B82F6" stopOpacity="0.3"/><stop offset="100%" stopColor="#06B6D4" stopOpacity="0.1"/></linearGradient>
+                  <filter id="glow"><feGaussianBlur stdDeviation="2"/></filter>
                 </defs>
-                <circle cx="110" cy="110" r="100" fill="url(#rg2)"/>
+                <circle cx="110" cy="110" r="100" fill="url(#radarGlow)"/>
                 {[25,45,65,85].map(r => <circle key={r} cx="110" cy="110" r={r} fill="none" stroke="rgba(59,130,246,0.06)" strokeWidth="0.5"/>)}
                 <line x1="110" y1="10" x2="110" y2="210" stroke="rgba(59,130,246,0.04)" strokeWidth="0.5"/>
                 <line x1="10" y1="110" x2="210" y2="110" stroke="rgba(59,130,246,0.04)" strokeWidth="0.5"/>
                 <line x1="39" y1="39" x2="181" y2="181" stroke="rgba(59,130,246,0.04)" strokeWidth="0.5"/>
                 <line x1="39" y1="181" x2="181" y2="39" stroke="rgba(59,130,246,0.04)" strokeWidth="0.5"/>
-                <polygon points="110,25 157,48 185,110 165,172 110,195 55,172 35,110 63,48" fill="url(#rf2)" stroke="#3B82F6" strokeWidth="1.5"/>
-                {[[110,25],[157,48],[185,110],[165,172],[110,195],[55,172],[35,110],[63,48]].map(([cx,cy]) => <circle key={`${cx},${cy}`} cx={cx} cy={cy} r="3.5" fill="#60A5FA"/>)}
+                <polygon points="110,25 157,48 185,110 165,172 110,195 55,172 35,110 63,48" fill="url(#radarFill)" stroke="#3B82F6" strokeWidth="1.5" filter="url(#glow)"/>
+                {[[110,25],[157,48],[185,110],[165,172],[110,195],[55,172],[35,110],[63,48]].map(([cx,cy]) => <circle key={`${cx},${cy}`} cx={cx} cy={cy} r="4" fill="#60A5FA"/>)}
               </svg>
             </div>
           </div>
