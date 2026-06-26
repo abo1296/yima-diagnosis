@@ -599,46 +599,28 @@ function CompleteScreen({ scores, onSubmit }: { scores: ReturnType<typeof calcul
   );
 }
 
-// ===== Result Screen =====
+// ===== Result Screen (三段式体验) =====
 function ResultScreen({ scores, info, warmupContext, onRestart }: { scores: ReturnType<typeof calculateScores>; info: CompanyInfo; warmupContext: string; onRestart: () => void }) {
+  const [phase, setPhase] = useState<"loading"|"reveal"|"report">("loading");
   const [displayScore, setDisplayScore] = useState(0);
-  const [showLevel, setShowLevel] = useState(false);
-  const [genStatus, setGenStatus] = useState<"loading"|"done"|"error">("loading");
   const [report, setReport] = useState<ReportData | null>(null);
   const [error, setError] = useState("");
-  const animRef = useRef(false);
+  const [barsAnimated, setBarsAnimated] = useState(false);
   const startedRef = useRef(false);
-  const radarRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
-  // Score count-up
-  useEffect(() => {
-    if (animRef.current) return;
-    animRef.current = true;
-    const target = scores.overall_score;
-    const totalSteps = target <= 40 ? Math.ceil(target/5) : target <= 70 ? Math.ceil(40/5 + (target-40)/2) : Math.ceil(40/5 + 30/2 + (target-70));
-    let step = 0;
-    const timer = setInterval(() => {
-      step++;
-      if (step >= totalSteps) { setDisplayScore(target); setTimeout(() => setShowLevel(true), 300); clearInterval(timer); }
-      else { const p = step / totalSteps; setDisplayScore(Math.round(target * (1 - Math.pow(1-p,3)))); }
-    }, 30);
-    return () => clearInterval(timer);
-  }, [scores.overall_score]);
+  const circumference = 2 * Math.PI * 95;
+  const scorePercent = scores.overall_score / 100;
+  const levelColor = scores.level === "领先型" ? "#10b981" : scores.level === "成熟型" ? "#3b82f6" : "#f59e0b";
+  const levelBg = scores.level === "领先型" ? "rgba(16,185,129,0.12)" : scores.level === "成熟型" ? "rgba(59,130,246,0.12)" : "rgba(245,158,11,0.12)";
+  const scoreGradient = scores.level === "领先型" ? ["#10B981","#34D399"] : scores.level === "成熟型" ? ["#3B82F6","#06B6D4"] : ["#F59E0B","#FDE68A"];
+  const percentile = scores.overall_score >= 70 ? 82 : scores.overall_score >= 50 ? 55 : 28;
 
-  // Auto-scroll to radar after score animation
-  useEffect(() => {
-    if (displayScore === scores.overall_score && radarRef.current) {
-      setTimeout(() => {
-        radarRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 500);
-    }
-  }, [displayScore, scores.overall_score]);
-
-  // Auto-generate AI report
+  // Fetch AI report
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
-    setGenStatus("loading");
+    const minLoading = setTimeout(() => setPhase("reveal"), 2200);
     (async () => {
       try {
         const resp = await fetch("/api/generate-report", {
@@ -648,388 +630,479 @@ function ResultScreen({ scores, info, warmupContext, onRestart }: { scores: Retu
         const data = await resp.json();
         if (!resp.ok) throw new Error(data.error || "请求失败");
         setReport(data.report);
-        setGenStatus("done");
-      } catch (e: unknown) { setError((e as Error).message); setGenStatus("error"); }
+      } catch (e: unknown) { setError((e as Error).message); }
     })();
-  }, [scores.overall_score]); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => clearTimeout(minLoading);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleRegenerate = async () => {
-    setGenStatus("loading"); setError(""); setReport(null);
-    try {
-      const resp = await fetch("/api/generate-report", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ overall_score: scores.overall_score, level: scores.level, scores: scores.scores, answers: scores.answers, industry: info.industry, storeCount: info.storeCount }),
-      });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || "请求失败");
-      setReport(data.report);
-      setGenStatus("done");
-    } catch (e: unknown) { setError((e as Error).message); setGenStatus("error"); }
-  };
+  // Score count-up during reveal
+  useEffect(() => {
+    if (phase !== "reveal") return;
+    const target = scores.overall_score;
+    const totalSteps = Math.max(1, Math.ceil(target / (target <= 40 ? 4 : target <= 70 ? 2 : 1.5)));
+    let step = 0;
+    const timer = setInterval(() => {
+      step++;
+      if (step >= totalSteps) { setDisplayScore(target); clearInterval(timer); }
+      else { const p = step / totalSteps; setDisplayScore(Math.round(target * (1 - Math.pow(1 - p, 3)))); }
+    }, 35);
+    return () => clearInterval(timer);
+  }, [phase, scores.overall_score]);
 
-  const levelColor = scores.level === "领先型" ? "#10b981" : scores.level === "成熟型" ? "#3b82f6" : scores.level === "成长型" ? "#f59e0b" : "#ef4444";
-  const levelBg = scores.level === "领先型" ? "rgba(16,185,129,0.15)" : scores.level === "成熟型" ? "rgba(59,130,246,0.15)" : scores.level === "成长型" ? "rgba(245,158,11,0.15)" : "rgba(239,68,68,0.15)";
+  // Dismiss reveal on scroll or click
+  const dismissReveal = useCallback(() => {
+    setPhase("report");
+    setTimeout(() => setBarsAnimated(true), 400);
+  }, []);
+
+  useEffect(() => {
+    if (phase !== "reveal") return;
+    const handler = () => { dismissReveal(); };
+    window.addEventListener("wheel", handler, { once: true });
+    return () => window.removeEventListener("wheel", handler);
+  }, [phase, dismissReveal]);
 
   return (
-    <div style={{ background: "var(--bg)", minHeight: "100dvh" }}>
-      {/* Hero */}
-      <div className="text-center px-4 py-12 sm:py-16">
-        <p className="text-sm mb-2" style={{ color: "var(--text-muted)" }}>逸马连锁成熟度诊断报告</p>
-        <div className="text-6xl sm:text-8xl font-black mb-1 tracking-tight transition-all" style={{ color: "var(--text-primary)" }}>
-          {displayScore}
-        </div>
-        <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>综合得分</p>
-        {showLevel && (
-          <span className="animate-pop-in inline-block px-4 py-1.5 rounded-full text-sm font-bold" style={{ background: levelBg, color: levelColor }}>
-            {scores.level}
-          </span>
-        )}
-        {info.industry && <p className="text-sm mt-2" style={{ color: "var(--text-muted)" }}>{info.industry} · {info.storeCount}</p>}
-      </div>
-
-      <div className="mx-auto max-w-2xl px-4 sm:px-4 pb-12">
-        {/* Radar + Scores */}
-        <div className="glass-card p-4 sm:p-6 mb-6" ref={radarRef}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>各维度得分</h3>
-            <button onClick={() => {
-              if (navigator.share) navigator.share({ title: "逸马诊断", text: `我的连锁得分：${scores.overall_score}分（${scores.level}）`, url: window.location.href }).catch(() => {});
-              else navigator.clipboard.writeText(window.location.href).then(() => alert("链接已复制！")).catch(() => {});
-            }} className="text-sm font-medium flex items-center gap-1" style={{ color: "var(--brand)" }}>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-              分享
-            </button>
+    <>
+      {/* ===== Phase 1: Loading ===== */}
+      {phase === "loading" && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 999, background: "var(--bg)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          <div className="load-ring-wrap">
+            <div className="load-ring-bg" />
+            <div className="load-ring-fill" />
+            <div className="load-icon-pulse">🔍</div>
           </div>
-          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-            <EnhancedRadar scores={scores.scores} />
-            <div className="grid grid-cols-2 sm:grid-cols-1 gap-1.5 w-full sm:w-auto text-sm">
-              {DIMENSION_ORDER.map((dim) => {
-                const sc = scores.scores[dim] || 0;
-                let dot = "#ef4444"; if (sc >= 66) dot = "#10b981"; else if (sc >= 41) dot = "#f59e0b";
-                return <div key={dim} className="flex items-center gap-2"><span className="w-2 h-2 rounded-full shrink-0" style={{ background: dot }} /><span style={{ color: "var(--text-secondary)" }} className="truncate">{DIMENSION_LABELS[dim]}</span><span className="font-semibold ml-auto" style={{ color: "var(--text-primary)" }}>{sc}</span></div>;
-              })}
+          <p style={{ marginTop: 24, fontSize: 16, color: "var(--text-secondary)", letterSpacing: 1 }}>
+            AI 正在分析你的连锁体系<span className="load-dots" />
+          </p>
+        </div>
+      )}
+
+      {/* ===== Phase 2: Score Reveal Overlay ===== */}
+      {phase === "reveal" && (
+        <div className="reveal-overlay" onClick={dismissReveal}>
+          <div style={{ textAlign: "center" }}>
+            <p style={{ fontSize: 14, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 3, marginBottom: 16 }}>诊断完成</p>
+            <div style={{ position: "relative", width: 200, height: 200, margin: "0 auto 20px" }}>
+              <svg className="reveal-ring-svg" viewBox="0 0 200 200">
+                <defs>
+                  <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor={scoreGradient[0]} />
+                    <stop offset="100%" stopColor={scoreGradient[1]} />
+                  </linearGradient>
+                </defs>
+                <circle className="reveal-ring-track" cx="100" cy="100" r="95" />
+                <circle className="reveal-ring-progress" cx="100" cy="100" r="95"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={circumference * (1 - scorePercent)} />
+              </svg>
+              <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                <div className={`reveal-num${displayScore > 0 ? " show" : ""}`} style={{
+                  background: `linear-gradient(180deg,${scoreGradient[0]},${scoreGradient[1]})`,
+                  WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent"
+                }}>{displayScore}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>综合得分 / 100</div>
+              </div>
             </div>
+            <div className={`reveal-badge-r${displayScore > 0 ? " show" : ""}`}
+              style={{ color: levelColor, background: levelBg, border: `1px solid ${levelColor}20` }}>
+              {scores.level}型企业
+            </div>
+            <p className={`reveal-sub-r${displayScore > 0 ? " show" : ""}`} style={{ marginTop: 8, color: "var(--text-secondary)" }}>
+              <b style={{ color: "#F59E0B" }}>超过 {percentile}%</b> 同规模连锁企业
+            </p>
+            <p className={`reveal-hint${displayScore > 0 ? " show" : ""}`} style={{ color: "var(--text-muted)" }}>
+              ↓ 向下滚动查看完整报告
+            </p>
           </div>
         </div>
+      )}
 
-        {/* AI Report - auto generating */}
-        {genStatus === "loading" && (
-          <div className="text-center py-8">
-            <svg className="animate-spin h-6 w-6 mx-auto mb-4" viewBox="0 0 24 24" fill="none" style={{ color: "var(--brand)" }}>
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-            <p className="text-sm" style={{ color: "var(--text-muted)" }}>AI 正在分析您的诊断数据...</p>
-            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>预计需要 20-40 秒</p>
+      {/* ===== Phase 3: Full Report ===== */}
+      {phase === "report" && (
+        <div ref={contentRef} className={`report-main${phase === "report" ? " show" : ""}`} style={{ padding: "60px 5% 80px" }}>
+          <div className="page-inner" style={{ maxWidth: 960, margin: "0 auto" }}>
+            <NewReportView scores={scores} report={report} error={error} info={info} barsAnimated={barsAnimated} onRestart={onRestart} />
           </div>
-        )}
-
-        {genStatus === "error" && (
-          <div className="text-center py-8">
-            <p className="text-sm mb-4 py-2 px-4 rounded-lg" style={{ color: "#ef4444", background: "rgba(239,68,68,0.1)" }}>{error}</p>
-            <button onClick={handleRegenerate} className="px-6 py-3 rounded-xl text-sm font-semibold" style={{ background: "var(--brand)", color: "white" }}>
-              重新生成报告
-            </button>
-          </div>
-        )}
-
-        {genStatus === "done" && report && <ReportView report={report} scores={scores} info={info} onRegenerate={handleRegenerate} />}
-
-        <div className="mt-6 text-center">
-          <button onClick={onRestart} className="text-sm" style={{ color: "var(--text-muted)" }}>重新诊断</button>
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 }
 
-// ===== Enhanced Radar =====
-function EnhancedRadar({ scores }: { scores: Record<string, number> }) {
-  const size = 210; const cx = size / 2; const cy = size / 2; const radius = 85; const levels = 5;
-  const angleSlice = (2 * Math.PI) / DIMENSION_ORDER.length;
-  const getPt = (dim: string, val: number) => {
-    const idx = DIMENSION_ORDER.indexOf(dim);
-    const a = angleSlice * idx - Math.PI / 2;
-    const r = (val / 100) * radius;
-    return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+
+// ===== 行业平均分参考 =====
+function getIndustryAverages(industry?: string): Record<string, number> {
+  const m: Record<string, Record<string, number>> = {
+    "餐饮": { strategy: 62, model: 58, operation: 55, organization: 52, supply_chain: 54, training: 48, supervision: 50, digital: 42, culture: 60 },
+    "零售": { strategy: 58, model: 55, operation: 56, organization: 50, supply_chain: 52, training: 48, supervision: 50, digital: 45, culture: 55 },
+    "服饰": { strategy: 56, model: 52, operation: 54, organization: 48, supply_chain: 50, training: 46, supervision: 48, digital: 44, culture: 52 },
+    "医药": { strategy: 55, model: 50, operation: 58, organization: 48, supply_chain: 52, training: 44, supervision: 52, digital: 40, culture: 50 },
+    "教育": { strategy: 52, model: 48, operation: 50, organization: 50, supply_chain: 40, training: 52, supervision: 45, digital: 38, culture: 55 },
+    "酒类": { strategy: 50, model: 48, operation: 48, organization: 45, supply_chain: 55, training: 42, supervision: 45, digital: 38, culture: 48 },
+    "家电": { strategy: 52, model: 50, operation: 50, organization: 48, supply_chain: 48, training: 44, supervision: 46, digital: 42, culture: 50 },
   };
-
-  return (
-    <div className="flex-shrink-0 radar-animate">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="overflow-visible">
-        {Array.from({ length: levels }, (_, i) => {
-          const r = ((i + 1) / levels) * radius;
-          const pts = DIMENSION_ORDER.map((_, idx) => {
-            const a = angleSlice * idx - Math.PI / 2;
-            return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`;
-          }).join(" ");
-          return <polygon key={i} points={pts} fill="none" stroke={i === levels - 1 ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.06)"} strokeWidth={i === levels - 1 ? 1.5 : 0.5} />;
-        })}
-        {DIMENSION_ORDER.map((dim) => {
-          const p = getPt(dim, 100);
-          return <line key={dim} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="rgba(255,255,255,0.06)" strokeWidth={0.5} />;
-        })}
-        <polygon points={DIMENSION_ORDER.map((dim) => { const p = getPt(dim, scores[dim] || 0); return `${p.x},${p.y}`; }).join(" ")}
-          fill="rgba(192,57,43,0.15)" stroke="var(--brand)" strokeWidth={1.5} strokeLinejoin="round" />
-        {DIMENSION_ORDER.map((dim) => {
-          const p = getPt(dim, scores[dim] || 0);
-          return <g key={dim}><circle cx={p.x} cy={p.y} r={3} fill="var(--brand)" />{/* Value label on dot */}</g>;
-        })}
-        {DIMENSION_ORDER.map((dim, idx) => {
-          const a = angleSlice * idx - Math.PI / 2;
-          const lr = radius + 20;
-          const x = cx + lr * Math.cos(a);
-          const y = cy + lr * Math.sin(a);
-          return <text key={dim} x={x} y={y} textAnchor="middle" dominantBaseline="middle" fill="var(--text-muted)" fontSize="9">{DIMENSION_LABELS[dim]}</text>;
-        })}
-      </svg>
-    </div>
-  );
+  return m[industry || ""] || { strategy: 55, model: 52, operation: 53, organization: 50, supply_chain: 50, training: 48, supervision: 48, digital: 42, culture: 55 };
 }
 
-// ===== Report View =====
-function ReportView({ report, scores, info, onRegenerate }: {
-  report: ReportData; scores: ReturnType<typeof calculateScores>; info: CompanyInfo;
-  onRegenerate: () => void;
+function getRating(gap: number): string {
+  if (gap >= 10) return "领先";
+  if (gap >= 3) return "良好";
+  if (gap >= -3) return "持平";
+  if (gap >= -10) return "待提升";
+  return "薄弱";
+}
+
+// ===== 新版报告 View =====
+function NewReportView({ scores, report, error, info, barsAnimated, onRestart }: {
+  scores: ReturnType<typeof calculateScores>;
+  report: ReportData | null;
+  error: string;
+  info: CompanyInfo;
+  barsAnimated: boolean;
+  onRestart: () => void;
 }) {
   const [phone, setPhone] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [showFloatCTA, setShowFloatCTA] = useState(false);
   const floatSentinelRef = useRef<HTMLDivElement>(null);
-  const sortedDims = [...report.dimensions].sort((a, b) => a.score - b.score);
-  const handlePrint = () => window.print();
+  const industryAvgs = useMemo(() => getIndustryAverages(info.industry), [info.industry]);
+  const radarRef = useRef<HTMLDivElement>(null);
+
+  const percentile = scores.overall_score >= 70 ? 82 : scores.overall_score >= 50 ? 55 : 28;
+  const levelColor = scores.level === "领先型" ? "#10b981" : scores.level === "成熟型" ? "#3b82f6" : "#f59e0b";
+
+  // Strengths (top 3) & improvements (bottom 3)
+  const sortedDims = useMemo(() => {
+    return DIMENSION_ORDER.map(dim => ({ dim, score: scores.scores[dim] || 0, label: DIMENSION_LABELS[dim] }))
+      .sort((a, b) => b.score - a.score);
+  }, [scores.scores]);
+  const strengths = sortedDims.slice(0, 3);
+  const improvements = sortedDims.slice(-3).reverse();
+
+  // AI report dimensions mapped by dim name for comments
+  const reportDimMap = useMemo(() => {
+    if (!report) return {};
+    const m: Record<string, string> = {};
+    report.dimensions.forEach(d => { m[d.dim] = d.comment; });
+    return m;
+  }, [report]);
+
   const handleConsult = async () => {
     if (phone.length !== 11 || !/^1\d{10}$/.test(phone)) return;
-    // 异步提交，不阻塞 UI
-    fetch("/api/leads", {
-      method: "POST", headers: { "Content-Type": "application/json" },
+    fetch("/api/leads", { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone, industry_code: INDUSTRIES.indexOf(info.industry), store_code: ["1-10家","11-50家","51-200家","200家以上"].indexOf(info.storeCount), score: scores.overall_score }),
     }).catch(() => {});
     setSubmitted(true);
   };
 
-  // 浮底 CTA：过半屏后显示
+  const handlePrint = () => window.print();
+  const handleCopy = () => {
+    const url = `${window.location.origin}/share?score=${scores.overall_score}&level=${encodeURIComponent(scores.level)}`;
+    navigator.clipboard.writeText(url).then(() => alert("链接已复制！")).catch(() => {});
+  };
+
+  // Float CTA sentinel observer
   useEffect(() => {
     const el = floatSentinelRef.current;
     if (!el) return;
-    const obs = new IntersectionObserver(([entry]) => {
-      setShowFloatCTA(entry.isIntersecting);
-    }, { threshold: 0 });
+    const obs = new IntersectionObserver(([entry]) => { setShowFloatCTA(entry.isIntersecting); }, { threshold: 0 });
     obs.observe(el);
     return () => obs.disconnect();
-  }, [report]);
+  }, []);
 
-  return (<>
-    <div className="space-y-4 sm:space-y-6">
-      {/* Overview */}
-      <div className="glass-card p-4 sm:p-6">
-        <h3 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>诊断总览</h3>
-        <p className="text-lg font-bold mb-3 leading-snug" style={{ color: "var(--text-primary)" }}>{report.overview.headline}</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <OCard icon="📌" label="发展阶段" val={report.overview.stage} />
-          <OCard icon="💪" label="核心优势" val={report.overview.strength} />
-          <OCard icon="⚠️" label="最大风险" val={report.overview.risk} color />
-        </div>
+  // Stagger triggers
+  useEffect(() => {
+    if (!barsAnimated) return;
+    const stagers = document.querySelectorAll(".stagger");
+    stagers.forEach((el, i) => {
+      setTimeout(() => el.classList.add("in"), i * 120);
+    });
+  }, [barsAnimated]);
+
+  const radarTargetPoints = DIMENSION_ORDER.map((dim, i) => {
+    const score = scores.scores[dim] || 0;
+    const angle = (2 * Math.PI / DIMENSION_ORDER.length) * i - Math.PI / 2;
+    const r = (score / 100) * 90;
+    return `${120 + r * Math.cos(angle)},${120 + r * Math.sin(angle)}`;
+  }).join(" ");
+
+  return (
+    <>
+      {/* ===== Score Summary Bar ===== */}
+      <div className="act-bar stagger">
+        <span style={{ fontSize: 36, fontWeight: 900, background: "linear-gradient(180deg,#F59E0B,#FDE68A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{scores.overall_score}</span>
+        <span style={{ fontSize: 13, color: "var(--text-muted)", alignSelf: "flex-end", marginBottom: 6 }}>/100 · {scores.level} · 超过 {percentile}% 同行</span>
+        <div style={{ flex: 1 }} />
+        <button className="act-btn" onClick={handleCopy}>📋 复制链接</button>
+        <button className="act-btn" onClick={handlePrint}>📥 下载PDF</button>
+        <button className="act-btn primary" onClick={onRestart}>🔄 重新诊断</button>
       </div>
 
-      {/* TL;DR 摘要卡 —— 老板5秒看懂 */}
-      {report.summary && (
-        <div className="glass-card p-4 sm:p-6 animate-pop-in" style={{ borderColor: "rgba(59,130,246,0.2)", background: "linear-gradient(135deg, rgba(59,130,246,0.04), rgba(6,182,212,0.02))" }}>
-          <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--brand-light)" }}>🔍 3 秒速览</h3>
-          <div className="space-y-2.5">
-            <div className="flex items-start gap-2.5">
-              <span className="text-xs shrink-0 mt-0.5" style={{ color: "#ef4444", fontWeight:700 }}>最致命</span>
-              <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{report.summary.fatal}</span>
-            </div>
-            <div className="flex items-start gap-2.5">
-              <span className="text-xs shrink-0 mt-0.5" style={{ color: "#10b981", fontWeight:700 }}>最强项</span>
-              <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{report.summary.strongest}</span>
-            </div>
-            <div className="flex items-start gap-2.5">
-              <span className="text-xs shrink-0 mt-0.5" style={{ color: "var(--brand-light)", fontWeight:700 }}>先做</span>
-              <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{report.summary.first}</span>
+      {/* ===== AI Error ===== */}
+      {error && (
+        <div className="text-center py-8 stagger">
+          <p className="text-sm py-2 px-4 rounded-lg inline-block" style={{ color: "#ef4444", background: "rgba(239,68,68,0.1)" }}>{error}</p>
+        </div>
+      )}
+
+      {/* ===== TL;DR Summary ===== */}
+      {report?.summary && (
+        <div className="s-section stagger">
+          <div className="glass-card p-4 sm:p-6" style={{ borderColor: "rgba(59,130,246,0.15)", background: "linear-gradient(135deg, rgba(59,130,246,0.04), rgba(6,182,212,0.02))" }}>
+            <h3 className="s-title">3 秒速览</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", width: 48, flexShrink: 0 }}>最致命</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{report.summary.fatal}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#10b981", width: 48, flexShrink: 0 }}>最强项</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{report.summary.strongest}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--brand-light)", width: 48, flexShrink: 0 }}>先做</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{report.summary.first}</span>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* 过半屏哨兵 — 触发浮底 CTA */}
+      {/* ===== Radar + 9 Dimension Bars ===== */}
+      <div className="s-section stagger" ref={radarRef}>
+        <h3 className="s-title">9维度成熟度诊断</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, alignItems: "center" }}>
+          {/* Radar */}
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <svg viewBox="0 0 240 240" width="100%" style={{ maxWidth: 360 }}>
+              <defs>
+                <linearGradient id="rfGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.35" />
+                  <stop offset="100%" stopColor="#06B6D4" stopOpacity="0.1" />
+                </linearGradient>
+              </defs>
+              {[30, 50, 70, 90].map(r => <circle key={r} cx="120" cy="120" r={r} fill="none" stroke="rgba(59,130,246,0.05)" strokeWidth="0.5" />)}
+              {[0, 45, 90, 135].map(a => {
+                const rad = (a * Math.PI) / 180;
+                return <line key={a} x1={120} y1={120} x2={120 + 95 * Math.cos(rad)} y2={120 + 95 * Math.sin(rad)} stroke="rgba(59,130,246,0.04)" strokeWidth="0.5" />;
+              })}
+              {/* Your score */}
+              <polygon points={radarTargetPoints} fill="url(#rfGrad)" stroke="#3B82F6" strokeWidth="1.5" />
+              {/* Industry avg (dashed) */}
+              <polygon
+                points={DIMENSION_ORDER.map((dim, i) => {
+                  const avg = industryAvgs[dim] || 50;
+                  const angle = (2 * Math.PI / DIMENSION_ORDER.length) * i - Math.PI / 2;
+                  const r = (avg / 100) * 90;
+                  return `${120 + r * Math.cos(angle)},${120 + r * Math.sin(angle)}`;
+                }).join(" ")}
+                fill="none" stroke="rgba(148,163,184,0.2)" strokeWidth="1.5" strokeDasharray="4,3" />
+              {/* Dots */}
+              {DIMENSION_ORDER.map((dim, i) => {
+                const sc = scores.scores[dim] || 0;
+                const angle = (2 * Math.PI / DIMENSION_ORDER.length) * i - Math.PI / 2;
+                const r = (sc / 100) * 90;
+                const x = 120 + r * Math.cos(angle), y = 120 + r * Math.sin(angle);
+                return <circle key={dim} cx={x} cy={y} r="3" fill="#60A5FA" />;
+              })}
+            </svg>
+          </div>
+          {/* Bar chart */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {DIMENSION_ORDER.map((dim) => {
+              const sc = scores.scores[dim] || 0;
+              let color = "linear-gradient(90deg,#EF4444,#F87171)";
+              if (sc >= 66) color = "linear-gradient(90deg,#10B981,#34D399)";
+              else if (sc >= 41) color = "linear-gradient(90deg,#3B82F6,#60A5FA)";
+              let txtColor = "#10B981";
+              if (sc < 66) txtColor = "#60A5FA";
+              if (sc < 41) txtColor = "#EF4444";
+              return (
+                <div key={dim} className="dim-bar-row">
+                  <span className="dim-bar-name" style={{ color: "var(--text-secondary)" }}>{DIMENSION_LABELS[dim]}</span>
+                  <div className="dim-bar-track">
+                    <div className="dim-bar-fill" style={{ width: barsAnimated ? `${sc}%` : "0", background: color }} />
+                  </div>
+                  <span className="dim-bar-val" style={{ color: txtColor }}>{sc}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ===== Benchmark Table ===== */}
+      <div className="s-section stagger">
+        <h3 className="s-title">行业对标 <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 400 }}>（虚线 = {info.industry || "行业"}均值）</span></h3>
+        <div className="glass-card" style={{ overflow: "hidden" }}>
+          <table className="cmp-table">
+            <thead><tr><th>维度</th><th>你的得分</th><th>行业平均</th><th>差距</th><th>评级</th></tr></thead>
+            <tbody>
+              {DIMENSION_ORDER.map((dim) => {
+                const my = scores.scores[dim] || 0;
+                const avg = industryAvgs[dim] || 50;
+                const gap = my - avg;
+                let dot = "#EF4444"; if (my >= 66) dot = "#10B981"; else if (my >= 41) dot = "#F59E0B";
+                return (
+                  <tr key={dim}>
+                    <td><span className="dot-ind" style={{ background: dot }} />{DIMENSION_LABELS[dim]}</td>
+                    <td><b>{my}</b></td>
+                    <td style={{ color: "var(--text-muted)" }}>{avg}</td>
+                    <td className={gap >= 0 ? "gap-up" : "gap-down"}>{gap >= 0 ? `↑ +${gap}` : `↓ ${gap}`}</td>
+                    <td style={{ color: gap >= 3 ? "#10B981" : gap >= -3 ? "var(--text-muted)" : "#EF4444", fontWeight: 600, fontSize: 12 }}>
+                      {getRating(gap)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ===== Strengths & Improvements ===== */}
+      <div className="sw-grid-r stagger">
+        <div className="sw-card-r good">
+          <h4>核心优势</h4>
+          <ul>
+            {strengths.map((s, i) => (
+              <li key={s.dim}>
+                <span style={{ color: "#10B981", flexShrink: 0 }}>✓</span>
+                <span>{reportDimMap[s.label] || s.label}{s.score}分 — 继续保持并放大这个优势</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="sw-card-r bad">
+          <h4>改进重点</h4>
+          <ul>
+            {improvements.map((s, i) => (
+              <li key={s.dim}>
+                <span style={{ color: "#F59E0B", flexShrink: 0, fontWeight: 700 }}>!</span>
+                <span>{reportDimMap[s.label] || s.label}{s.score}分 — 优先投入资源改善</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* ===== Improvement Roadmap ===== */}
+      <div className="s-section stagger">
+        <h3 className="s-title">改进路线图</h3>
+        <div className="road-grid-r">
+          {(report?.actions || [
+            { title: "数字化筑基", why: "引入轻量级数据中台", timeline: "0-6个月" },
+            { title: "标准化升级", why: "搭建SOP知识库与培训平台", timeline: "6-12个月" },
+            { title: "规模扩张准备", why: "完善加盟商赋能体系", timeline: "12-18个月" },
+          ]).slice(0, 3).map((act, i) => {
+            const phases = ["Phase 1", "Phase 2", "Phase 3"];
+            const lines = ["p1", "p2", "p3"];
+            return (
+              <div key={i} className="road-card-r">
+                <div className={`r-line ${lines[i]}`} />
+                <div className="r-num">{phases[i]} · {act.timeline}</div>
+                <h4>{act.title}</h4>
+                <p>{act.why}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ===== Pain Point ===== */}
+      {report?.painpoint && (
+        <div className="s-section stagger">
+          <div className="glass-card p-4 sm:p-6" style={{ borderColor: "rgba(239,68,68,0.15)" }}>
+            <h3 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "#ef4444" }}>这个阶段最容易犯的错</h3>
+            <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{report.painpoint}</p>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Yima Value ===== */}
+      {report?.yima && (
+        <div className="s-section stagger">
+          <div className="glass-card p-4 sm:p-6" style={{ borderColor: "rgba(59,130,246,0.15)" }}>
+            <h3 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--brand-light)" }}>逸马如何帮你解决这些问题</h3>
+            <p className="text-xs leading-relaxed mb-3" style={{ color: "var(--text-secondary)" }}>{report.yima}</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {["22年连锁经验", "3000+企业验证", "195家推动上市", "方法进入200+高校教材"].map(t => (
+                <span key={t} style={{ fontSize: 10, padding: "2px 10px", borderRadius: 100, background: "rgba(59,130,246,0.08)", color: "var(--brand-light)", border: "1px solid rgba(59,130,246,0.12)" }}>✓ {t}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== CTA ===== */}
+      <div className="s-section stagger noprint">
+        <div className="glass-card p-4 sm:p-6" style={{ borderColor: "rgba(59,130,246,0.25)", background: "linear-gradient(135deg, rgba(59,130,246,0.06), rgba(6,182,212,0.04))" }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>让逸马顾问帮你把诊断变成行动</h3>
+          <p style={{ fontSize: 11, color: "var(--text-secondary)", marginBottom: 14 }}>
+            {report?.nextStep || `基于你的${scores.overall_score}分诊断结果，我们建议下一步进行针对性的深度分析。留下手机号，逸马顾问将在1个工作日内联系你，提供免费的30分钟电话解读。`}
+          </p>
+          {submitted ? (
+            <div style={{ textAlign: "center", padding: "12px", borderRadius: 10, background: "rgba(16,185,129,0.08)" }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#10b981" }}>已提交，逸马顾问将尽快联系你</p>
+            </div>
+          ) : (
+            <>
+              {scores.overall_score < 45 && (
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)" }}>
+                  <span style={{ fontSize: 12 }}>⚠️</span>
+                  <span style={{ fontSize: 11, fontWeight: 500, color: "#ef4444" }}>你的系统性问题较多，6个月内出问题的概率很高。建议尽快深度诊断。</span>
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 8 }}>
+                <input type="tel" value={phone} onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 11); setPhone(v); }}
+                  placeholder="输入手机号，获取专属方案" maxLength={11}
+                  style={{ flex: 1, padding: "10px 14px", borderRadius: 10, fontSize: 13, outline: "none", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "var(--text-primary)" }} />
+                <button onClick={handleConsult} disabled={phone.length !== 11}
+                  style={{ padding: "10px 20px", borderRadius: 10, fontSize: 13, fontWeight: 600, border: "none", cursor: phone.length === 11 ? "pointer" : "default", transition: "all .3s",
+                    background: phone.length === 11 ? "linear-gradient(135deg,#3B82F6,#2563EB)" : "rgba(255,255,255,0.06)", color: phone.length === 11 ? "white" : "var(--text-muted)" }}>
+                  免费解读</button>
+              </div>
+            </>
+          )}
+          <p style={{ fontSize: 10, color: "var(--text-muted)", textAlign: "center", marginTop: 10 }}>不收费 · 不限时 · 纯粹基于你的诊断结果做深度解读</p>
+        </div>
+      </div>
+
+      {/* Sentinel for float CTA */}
       <div ref={floatSentinelRef} />
 
-      {/* Benchmark */}
-      {report.benchmark && (
-        <div className="glass-card p-4 sm:p-6" style={{ borderColor: "rgba(212,168,83,0.3)" }}>
-          <h3 className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--brand-light)" }}>行业对比</h3>
-          <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{report.benchmark}</p>
-        </div>
-      )}
+      {/* ===== Footer ===== */}
+      <footer style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--text-muted)", paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.04)", flexWrap: "wrap", gap: 8 }}>
+        <span>© 2026 逸马诊断 yima777.cn</span>
+        <span>逸马22年连锁方法论 · 200+高校教材 · 国家版权课程</span>
+      </footer>
 
-      {/* Pain Points — 让老板觉得"在说我" */}
-      {report.painpoint && (
-        <div className="glass-card p-4 sm:p-6" style={{ borderColor: "rgba(239,68,68,0.2)" }}>
-          <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: "#ef4444" }}>⚠️ 这个阶段最容易犯的错</h3>
-          <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{report.painpoint}</p>
-        </div>
-      )}
-
-      {/* Dimension Analysis */}
-      <div className="glass-card p-4 sm:p-6">
-        <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>维度分析 <span style={{ color: "var(--text-muted)" }}>（按得分排序）</span></h3>
-        <div className="space-y-2">
-          {sortedDims.map((dim) => {
-            const realScore = scores.scores[dim.dim] || dim.score;
-            const isLow = realScore < 40;
-            let dot = "#ef4444"; if (realScore >= 66) dot = "#10b981"; else if (realScore >= 41) dot = "#f59e0b";
-            return (
-              <details key={dim.dim} className={`group${isLow ? " dim-alert" : ""}`} open={isLow || undefined}>
-                <summary className="flex items-center gap-2 cursor-pointer list-none py-2 px-2 -mx-2 rounded-xl transition-colors" style={{ background: isLow ? "rgba(239,68,68,0.06)" : "transparent" }}>
-                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: dot }} />
-                  <span className="text-sm font-medium w-16 shrink-0" style={{ color: "var(--text-primary)" }}>{dim.dim}</span>
-                  <span className="text-sm font-bold w-7 shrink-0" style={{ color: dot }}>{realScore}</span>
-                  {isLow && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 animate-pulse" style={{ background: "rgba(239,68,68,0.15)", color: "#ef4444" }}>关注</span>}
-                  <span className="text-xs truncate flex-1" style={{ color: "var(--text-secondary)" }}>{dim.comment}</span>
-                  <svg className="w-4 h-4 shrink-0 group-open:rotate-180 transition-transform" fill="none" stroke="var(--text-muted)" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                </summary>
-                <div className="mt-2 ml-6 pl-3 border-l-2 space-y-1.5" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
-                  <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{dim.comment}</p>
-                  {dim.tips.map((tip, i) => <p key={i} className="text-xs flex items-start gap-1.5" style={{ color: "var(--brand)" }}><span style={{ color: "var(--brand-light)" }} className="mt-0.5 shrink-0">→</span>{tip}</p>)}
-                </div>
-              </details>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Action Cards */}
-      <div>
-        <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>优先行动</h3>
-        <div className="space-y-3">
-          {report.actions.map((act, i) => {
-            const priority = i === 0 ? "P0" : i === 1 ? "P1" : "P2";
-            const pColor = i === 0 ? "var(--brand)" : i === 1 ? "#f59e0b" : "var(--text-muted)";
-            return (
-              <div key={i} className="glass-card p-4 flex gap-3" style={{ borderLeftWidth: "3px", borderLeftStyle: "solid", borderLeftColor: pColor, borderTopLeftRadius: "12px", borderBottomLeftRadius: "12px" }}>
-                <div className="flex-1">
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded mb-1.5 inline-block" style={{ background: `${pColor}20`, color: pColor }}>{priority}</span>
-                  <p className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>{act.title}</p>
-                  <p className="text-xs mb-2" style={{ color: "var(--text-secondary)" }}>{act.why}</p>
-                  <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>⏱ {act.timeline}</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Yima Value — 具体案例，不是泛泛的"我们有方法" */}
-      <div className="glass-card p-4 sm:p-6" style={{ borderColor: "rgba(59,130,246,0.2)" }}>
-        <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--brand-light)" }}>逸马如何帮你解决这些问题</h3>
-        <p className="text-xs sm:text-sm leading-relaxed mb-4" style={{ color: "var(--text-secondary)" }}>{report.yima}</p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-          {["22年连锁经验","3000+企业验证","195家推动上市","方法进入200+高校教材"].map((t) => (
-            <span key={t} className="text-[10px] px-2 py-1 rounded-full" style={{ background: "rgba(59,130,246,0.08)", color: "var(--brand-light)", border: "1px solid rgba(59,130,246,0.15)" }}>✓ {t}</span>
-          ))}
-        </div>
-      </div>
-
-      {/* CTA — 动态文案，基于诊断结果 */}
-      <div className="glass-card p-4 sm:p-6 noprint" style={{ borderColor: "rgba(59,130,246,0.3)", background: "linear-gradient(135deg, rgba(59,130,246,0.06), rgba(6,182,212,0.04))" }}>
-        <h3 className="text-sm font-bold mb-1" style={{ color: "var(--text-primary)" }}>让逸马顾问帮你把诊断变成行动</h3>
-        <p className="text-xs mb-4 leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-          {report.nextStep || `基于你的${scores.overall_score}分诊断结果，我们建议下一步进行针对性的深度分析。留下手机号，逸马顾问将在1个工作日内联系你，提供免费的30分钟电话解读。`}
-        </p>
-        {submitted ? (
-          <div className="text-center py-4 rounded-xl" style={{ background: "rgba(16,185,129,0.1)" }}>
-            <p className="text-sm font-semibold" style={{ color: "#10b981" }}>已提交，逸马顾问将尽快联系你</p>
-            <p className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>如果有紧急问题，可直接拨打 400-xxx-xxxx</p>
-          </div>
-        ) : (
-          <>
-            {scores.overall_score < 45 && (
-              <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg animate-pulse" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
-                <span className="text-sm shrink-0">⚠️</span>
-                <span className="text-xs font-medium" style={{ color: "#ef4444" }}>你的系统性问题较多，按当前状态继续运营，6个月内出问题的概率很高。建议尽快做一次深度诊断。</span>
-              </div>
-            )}
-            <div className="flex gap-2">
-            <input type="tel" value={phone} onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 11); setPhone(v); }} placeholder="输入手机号，获取专属方案"
-              className="flex-1 px-4 py-3 rounded-xl text-sm outline-none" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "var(--text-primary)" }} maxLength={11} />
-            <button onClick={handleConsult} disabled={phone.length !== 11} className="px-5 py-3 rounded-xl text-sm font-semibold transition-all shrink-0"
-              style={phone.length === 11 ? { background: "var(--brand)", color: "white", boxShadow: "0 0 20px rgba(59,130,246,0.3)" } : { background: "rgba(255,255,255,0.06)", color: "var(--text-muted)" }}>
+      {/* ===== Float CTA Bar ===== */}
+      {showFloatCTA && !submitted && (
+        <div className="float-cta-bar" style={{
+          position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
+          background: "rgba(2,6,23,0.97)", backdropFilter: "blur(16px)",
+          borderTop: "1px solid rgba(59,130,246,0.15)",
+          padding: "10px 16px", paddingBottom: "max(10px, env(safe-area-inset-bottom))",
+        }}>
+          <div style={{ maxWidth: 500, margin: "0 auto", display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                你的报告只看了一半——最关键的建议在下面
+              </p>
+            </div>
+            <input type="tel" value={phone} onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 11); setPhone(v); }}
+              placeholder="手机号" maxLength={11}
+              style={{ width: 100, padding: "7px 10px", borderRadius: 8, fontSize: 12, outline: "none", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", color: "var(--text-primary)" }} />
+            <button onClick={handleConsult} disabled={phone.length !== 11}
+              style={{ padding: "7px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600, border: "none", whiteSpace: "nowrap",
+                background: phone.length === 11 ? "var(--brand)" : "rgba(255,255,255,0.06)", color: phone.length === 11 ? "white" : "var(--text-muted)" }}>
               免费解读</button>
           </div>
-          </>
-        )}
-        <p className="text-[10px] mt-3 text-center" style={{ color: "var(--text-muted)" }}>不收费 · 不限时 · 纯粹基于你的诊断结果做深度解读</p>
-      </div>
-
-      {/* Bottom actions */}
-      <div className="flex items-center justify-center gap-4 pt-1 flex-wrap noprint">
-        <button onClick={handlePrint} className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all"
-          style={{ background: "var(--brand)", color: "white" }}>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-          导出 PDF
-        </button>
-        <span style={{ color: "var(--text-muted)" }}>|</span>
-        <button onClick={() => {
-          const url = `${window.location.origin}/share?score=${scores.overall_score}&level=${encodeURIComponent(scores.level)}`;
-          if (navigator.share) {
-            navigator.share({ title: "逸马诊断", text: `我的连锁得分：${scores.overall_score}分（${scores.level}）`, url }).catch(() => {});
-          } else {
-            navigator.clipboard.writeText(url).then(() => alert("分享链接已复制！")).catch(() => {});
-          }
-        }} className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all"
-          style={{ background: "rgba(255,255,255,0.08)", color: "var(--text-primary)", border: "1px solid rgba(255,255,255,0.12)" }}>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-          分享结果
-        </button>
-        <span style={{ color: "var(--text-muted)" }}>|</span>
-        <button onClick={onRegenerate} className="text-sm font-medium" style={{ color: "var(--brand)" }}>
-          重新生成报告
-        </button>
-      </div>
-    </div>
-
-    {/* 浮底 CTA 条 —— 过半屏后出现 */}
-    {showFloatCTA && !submitted && (
-      <div className="float-cta-bar" style={{
-        position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
-        background: "rgba(2,6,23,0.97)", backdropFilter: "blur(16px)",
-        borderTop: "1px solid rgba(59,130,246,0.15)",
-        padding: "10px 16px", paddingBottom: "max(10px, env(safe-area-inset-bottom))",
-      }}>
-        <div className="max-w-lg mx-auto flex items-center gap-2">
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold truncate" style={{ color: "var(--text-primary)" }}>
-              你的报告只看了一半——最关键的建议在下面
-            </p>
-            <p className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>
-              留手机号，逸马顾问免费为你解读完整报告
-            </p>
-          </div>
-          <input type="tel" value={phone} onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 11); setPhone(v); }}
-            placeholder="手机号" maxLength={11}
-            className="w-28 px-3 py-2 rounded-lg text-sm outline-none shrink-0"
-            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", color: "var(--text-primary)" }} />
-          <button onClick={handleConsult} disabled={phone.length !== 11}
-            className="px-3 py-2 rounded-lg text-xs font-semibold transition-all shrink-0"
-            style={phone.length === 11 ? { background: "var(--brand)", color: "white" } : { background: "rgba(255,255,255,0.06)", color: "var(--text-muted)" }}>
-            免费解读
-          </button>
         </div>
-      </div>
-    )}
-
-    {showFloatCTA && !submitted && <div style={{ height: "72px" }} />}
-  </>);
-}
-
-function OCard({ icon, label, val, color }: { icon: string; label: string; val: string; color?: boolean }) {
-  const border = color ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.06)";
-  return (
-    <div className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${border}` }}>
-      <p className="text-[10px] mb-1" style={{ color: "var(--text-muted)" }}>{icon} {label}</p>
-      <p className="text-xs font-medium leading-snug" style={{ color: "var(--text-primary)" }}>{val}</p>
-    </div>
+      )}
+      {showFloatCTA && !submitted && <div style={{ height: 60 }} />}
+    </>
   );
 }
