@@ -989,8 +989,8 @@ function NewReportView({ scores, report, error, info, barsAnimated, onRestart }:
   const radarTargetPoints = DIMENSION_ORDER.map((dim, i) => {
     const score = scores.scores[dim] || 0;
     const angle = (2 * Math.PI / DIMENSION_ORDER.length) * i - Math.PI / 2;
-    const r = (score / 100) * 90;
-    return `${120 + r * Math.cos(angle)},${120 + r * Math.sin(angle)}`;
+    const r = (score / 100) * 80;
+    return `${(120 + r * Math.cos(angle)).toFixed(1)},${(120 + r * Math.sin(angle)).toFixed(1)}`;
   }).join(" ");
 
     return (
