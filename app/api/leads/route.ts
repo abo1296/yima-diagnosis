@@ -45,13 +45,10 @@ export async function POST(request: Request) {
     const WEBHOOK_URL = "https://open.feishu.cn/open-apis/bot/v2/hook/e62aa6ed-ff47-459a-b344-b1d4a698ad55";
     const webhook = ((process.env as any)?.LEADS_WEBHOOK_URL) || ((globalThis as any)?.LEADS_WEBHOOK_URL) || WEBHOOK_URL;
     if (webhook) {
-      // 硬编码中文测试：排除变量拼接和JSON.stringify的影响
-      const hardcoded = '{"msg_type":"text","content":{"text":"测试中文消息：' + phone + '"}}';
-      try { await fetch(webhook, { method: "POST", headers: { "Content-Type": "application/json" }, body: hardcoded }); } catch {}
-
-      // 同时发送原来的线索消息（带变量）
-      const text = `\u{1F4DE}\u65b0\u7ebf\u7d22\n\u624b\u673a\uff1a${phone}\n\u884c\u4e1a\uff1a${industry||"-"}\n\u95e8\u5e97\uff1a${storeCount||"-"}\n\u5f97\u5206\uff1a${score||"-"}\uff08${level||"-"}\uff09`;
-      const payload = JSON.stringify({ msg_type: "text", content: { text } });
+      // 手动构建JSON，绕过 JSON.stringify（Workers运行时对中文处理有bug）
+      const rawText = `\u{1F4DE}\u65b0\u7ebf\u7d22\n\u624b\u673a\uff1a${phone}\n\u884c\u4e1a\uff1a${industry||"-"}\n\u95e8\u5e97\uff1a${storeCount||"-"}\n\u5f97\u5206\uff1a${score||"-"}\uff08${level||"-"}\uff09`;
+      const safeText = rawText.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+      const payload = '{"msg_type":"text","content":{"text":"' + safeText + '"}}';
       try { await fetch(webhook, { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }); } catch {}
     }
 
