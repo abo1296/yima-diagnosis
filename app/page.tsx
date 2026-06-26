@@ -364,7 +364,7 @@ function Welcome({ onStart }: { onStart: () => void }) {
       {/* FOOTER */}
       <footer className="landing-footer">
         <div className="reveal">
-          <img src="/logo.png" alt="逸马" className="f-logo" />
+          <img src="/logo.png" alt="逸马" style={{width:24,height:24,borderRadius:8,objectFit:"cover",marginBottom:14}} />
           <h4 style={{fontSize:15,fontWeight:700,marginBottom:6}}>逸马连锁成熟度诊断</h4>
           <p>基于22年连锁咨询方法论<br />9维度全面评估体系成熟度<br />手机浏览器打开 yima777.cn 随时测</p>
         </div>
@@ -380,36 +380,38 @@ function Welcome({ onStart }: { onStart: () => void }) {
 function InfoStep({ info, setInfo, onNext }: { info: CompanyInfo; setInfo: (v: CompanyInfo) => void; onNext: () => void }) {
   const canNext = info.industry && info.storeCount;
   return (
-    <div className="flex flex-col items-center justify-center min-h-[100dvh] px-5" style={{ background: "var(--bg-primary)" }}>
+    <div className="flex flex-col items-center justify-center min-h-[100dvh] px-5" style={{ background: "var(--bg)" }}>
       <div className="max-w-md w-full">
-        <h2 className="text-lg sm:text-xl font-bold mb-1 text-center" style={{ color: "var(--text-primary)" }}>基本信息</h2>
-        <p className="text-xs sm:text-sm mb-6 text-center" style={{ color: "var(--text-secondary)" }}>帮助我们生成更精准的诊断报告</p>
-        <div className="space-y-5">
+        <div className="section-label" style={{justifyContent:"center"}}>STEP 01</div>
+        <h2 className="text-2xl font-extrabold mb-1 text-center tracking-tight" style={{ color: "var(--text-primary)" }}>基本信息</h2>
+        <p className="text-sm mb-8 text-center" style={{ color: "var(--text-secondary)" }}>帮助生成更精准的行业对标诊断</p>
+        <div className="space-y-6">
           <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: "var(--text-secondary)" }}>所属行业</label>
+            <label className="block text-xs font-semibold mb-2.5 uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>所属行业</label>
             <select value={info.industry} onChange={(e) => setInfo({ ...info, industry: e.target.value })}
-              className="w-full px-4 py-3.5 rounded-xl text-base outline-none transition-all appearance-none" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "var(--text-primary)" }}>
+              className="w-full px-5 py-4 rounded-xl text-base outline-none transition-all appearance-none"
+              style={{ background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-primary)", backdropFilter:"blur(10px)" }}>
               <option value="">请选择行业</option>
-              {INDUSTRIES.map((ind) => <option key={ind} value={ind} style={{ background: "#1a1a1a" }}>{ind}</option>)}
+              {INDUSTRIES.map((ind) => <option key={ind} value={ind} style={{ background: "#020617" }}>{ind}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: "var(--text-secondary)" }}>门店数量</label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <label className="block text-xs font-semibold mb-2.5 uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>门店数量</label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {["1-10家","11-50家","51-200家","200家以上"].map((opt) => (
                 <button key={opt} onClick={() => setInfo({ ...info, storeCount: opt })}
-                  className="py-3 rounded-lg text-sm font-medium transition-all"
+                  className="py-3.5 rounded-xl text-sm font-semibold transition-all"
                   style={info.storeCount === opt
-                    ? { borderColor: "var(--yima-red)", background: "rgba(192,57,43,0.12)", color: "var(--yima-red)", border: "1px solid var(--yima-red)" }
-                    : { border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "var(--text-secondary)" }}>
+                    ? { borderColor: "var(--brand)", background: "rgba(59,130,246,0.12)", color: "var(--brand-light)", border: "1px solid var(--brand)" }
+                    : { border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text-secondary)", backdropFilter:"blur(10px)" }}>
                   {opt}</button>
               ))}
             </div>
           </div>
         </div>
-        <button onClick={onNext} disabled={!canNext} className="w-full mt-8 py-4 rounded-xl font-semibold text-base transition-all active:scale-[0.98]"
-          style={canNext ? { background: "var(--yima-red)", color: "white" } : { background: "rgba(255,255,255,0.06)", color: "var(--text-muted)" }}>
-          开始答题
+        <button onClick={onNext} disabled={!canNext} className="w-full mt-8 py-4 rounded-xl font-bold text-base transition-all"
+          style={canNext ? { background: "linear-gradient(135deg,#3B82F6,#2563EB)", color:"#fff", boxShadow:"0 4px 24px rgba(59,130,246,0.25)" } : { background: "rgba(255,255,255,0.04)", color: "var(--text-muted)" }}>
+          下一步：开始诊断 →
         </button>
       </div>
     </div>
@@ -472,7 +474,7 @@ function SurveyFlow({ answers, saveAnswers, step, setStep, onComplete }: {
   const canGoPrev = qIdx > 0 || dimIdx > 0;
 
   return (
-    <div className="flex flex-col min-h-[100dvh]" style={{ background: "var(--bg-primary)" }}>
+    <div className="flex flex-col min-h-[100dvh]" style={{ background: "var(--bg)" }}>
       {/* Progress line */}
       <div className="sticky top-0 z-10 px-4 py-3" style={{ background: "rgba(10,10,15,0.95)", backdropFilter: "blur(10px)" }}>
         <div className="progress-line mx-auto max-w-xl">
@@ -536,13 +538,13 @@ function WarmupScreen({ questions: wqs, onDone }: {
     }
   };
   return (
-    <div className="flex flex-col min-h-[100dvh]" style={{ background: "var(--bg-primary)" }}>
-      <div className="sticky top-0 z-10 px-4 py-3" style={{ background: "rgba(10,10,15,0.95)" }}>
+    <div className="flex flex-col min-h-[100dvh]" style={{ background: "var(--bg)" }}>
+      <div className="sticky top-0 z-10 px-4 py-3" style={{ background: "rgba(2,6,23,0.95)" }}>
         <div className="progress-line mx-auto max-w-xl">
           <div className="progress-line-fill" style={{ width: `${Math.round((idx / Math.max(wqs.length, 1)) * 100)}%` }} />
         </div>
         <p className="text-[11px] mt-2 text-center" style={{ color: "var(--text-muted)" }}>
-          <span style={{ color: "var(--yima-gold)" }}>行业定制 </span>{idx + 1}/{wqs.length}
+          <span style={{ color: "var(--brand-light)" }}>行业定制 </span>{idx + 1}/{wqs.length}
         </p>
       </div>
       <main className="flex-1 flex flex-col items-center justify-center px-5">
@@ -583,13 +585,13 @@ function DimIntro({ dim, dimIdx, hue, onDone }: { dim: typeof dimGroups[0]; dimI
 // ===== Complete Screen =====
 function CompleteScreen({ scores, onSubmit }: { scores: ReturnType<typeof calculateScores>; onSubmit: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[100dvh] px-5" style={{ background: "var(--bg-primary)" }}>
+    <div className="flex flex-col items-center justify-center min-h-[100dvh] px-5" style={{ background: "var(--bg)" }}>
       <div className="text-center animate-pop-in">
         <div className="text-5xl mb-4">✓</div>
         <h2 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>诊断完成</h2>
         <p className="text-sm mb-8" style={{ color: "var(--text-secondary)" }}>72 题全部完成，查看你的连锁成熟度报告</p>
-        <button onClick={onSubmit} className="animate-breathe px-10 py-4 rounded-xl font-semibold text-base transition-all active:scale-[0.98]"
-          style={{ background: "var(--yima-red)", color: "white", boxShadow: "0 0 20px rgba(192,57,43,0.3)" }}>
+        <button onClick={onSubmit} className="animate-breathe px-10 py-4 rounded-xl font-bold text-base transition-all"
+          style={{ background: "linear-gradient(135deg,#3B82F6,#2563EB)", color:"#fff", boxShadow:"0 0 20px rgba(59,130,246,0.3)" }}>
           查看我的诊断报告 →
         </button>
       </div>
@@ -669,7 +671,7 @@ function ResultScreen({ scores, info, warmupContext, onRestart }: { scores: Retu
   const levelBg = scores.level === "领先型" ? "rgba(16,185,129,0.15)" : scores.level === "成熟型" ? "rgba(59,130,246,0.15)" : scores.level === "成长型" ? "rgba(245,158,11,0.15)" : "rgba(239,68,68,0.15)";
 
   return (
-    <div style={{ background: "var(--bg-primary)", minHeight: "100dvh" }}>
+    <div style={{ background: "var(--bg)", minHeight: "100dvh" }}>
       {/* Hero */}
       <div className="text-center px-4 py-12 sm:py-16">
         <p className="text-sm mb-2" style={{ color: "var(--text-muted)" }}>逸马连锁成熟度诊断报告</p>
@@ -693,7 +695,7 @@ function ResultScreen({ scores, info, warmupContext, onRestart }: { scores: Retu
             <button onClick={() => {
               if (navigator.share) navigator.share({ title: "逸马诊断", text: `我的连锁得分：${scores.overall_score}分（${scores.level}）`, url: window.location.href }).catch(() => {});
               else navigator.clipboard.writeText(window.location.href).then(() => alert("链接已复制！")).catch(() => {});
-            }} className="text-sm font-medium flex items-center gap-1" style={{ color: "var(--yima-red)" }}>
+            }} className="text-sm font-medium flex items-center gap-1" style={{ color: "var(--brand)" }}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
               分享
             </button>
@@ -713,7 +715,7 @@ function ResultScreen({ scores, info, warmupContext, onRestart }: { scores: Retu
         {/* AI Report - auto generating */}
         {genStatus === "loading" && (
           <div className="text-center py-8">
-            <svg className="animate-spin h-6 w-6 mx-auto mb-4" viewBox="0 0 24 24" fill="none" style={{ color: "var(--yima-red)" }}>
+            <svg className="animate-spin h-6 w-6 mx-auto mb-4" viewBox="0 0 24 24" fill="none" style={{ color: "var(--brand)" }}>
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
@@ -725,7 +727,7 @@ function ResultScreen({ scores, info, warmupContext, onRestart }: { scores: Retu
         {genStatus === "error" && (
           <div className="text-center py-8">
             <p className="text-sm mb-4 py-2 px-4 rounded-lg" style={{ color: "#ef4444", background: "rgba(239,68,68,0.1)" }}>{error}</p>
-            <button onClick={handleRegenerate} className="px-6 py-3 rounded-xl text-sm font-semibold" style={{ background: "var(--yima-red)", color: "white" }}>
+            <button onClick={handleRegenerate} className="px-6 py-3 rounded-xl text-sm font-semibold" style={{ background: "var(--brand)", color: "white" }}>
               重新生成报告
             </button>
           </div>
@@ -768,10 +770,10 @@ function EnhancedRadar({ scores }: { scores: Record<string, number> }) {
           return <line key={dim} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="rgba(255,255,255,0.06)" strokeWidth={0.5} />;
         })}
         <polygon points={DIMENSION_ORDER.map((dim) => { const p = getPt(dim, scores[dim] || 0); return `${p.x},${p.y}`; }).join(" ")}
-          fill="rgba(192,57,43,0.15)" stroke="var(--yima-red)" strokeWidth={1.5} strokeLinejoin="round" />
+          fill="rgba(192,57,43,0.15)" stroke="var(--brand)" strokeWidth={1.5} strokeLinejoin="round" />
         {DIMENSION_ORDER.map((dim) => {
           const p = getPt(dim, scores[dim] || 0);
-          return <g key={dim}><circle cx={p.x} cy={p.y} r={3} fill="var(--yima-red)" />{/* Value label on dot */}</g>;
+          return <g key={dim}><circle cx={p.x} cy={p.y} r={3} fill="var(--brand)" />{/* Value label on dot */}</g>;
         })}
         {DIMENSION_ORDER.map((dim, idx) => {
           const a = angleSlice * idx - Math.PI / 2;
@@ -820,7 +822,7 @@ function ReportView({ report, scores, info, onRegenerate }: {
       {/* Benchmark */}
       {report.benchmark && (
         <div className="glass-card p-4 sm:p-6" style={{ borderColor: "rgba(212,168,83,0.3)" }}>
-          <h3 className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--yima-gold)" }}>行业对比</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--brand-light)" }}>行业对比</h3>
           <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{report.benchmark}</p>
         </div>
       )}
@@ -843,7 +845,7 @@ function ReportView({ report, scores, info, onRegenerate }: {
                 </summary>
                 <div className="mt-2 ml-6 pl-3 border-l-2 space-y-1.5" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
                   <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{dim.comment}</p>
-                  {dim.tips.map((tip, i) => <p key={i} className="text-xs flex items-start gap-1.5" style={{ color: "var(--yima-red)" }}><span style={{ color: "var(--yima-gold)" }} className="mt-0.5 shrink-0">→</span>{tip}</p>)}
+                  {dim.tips.map((tip, i) => <p key={i} className="text-xs flex items-start gap-1.5" style={{ color: "var(--brand)" }}><span style={{ color: "var(--brand-light)" }} className="mt-0.5 shrink-0">→</span>{tip}</p>)}
                 </div>
               </details>
             );
@@ -857,7 +859,7 @@ function ReportView({ report, scores, info, onRegenerate }: {
         <div className="space-y-3">
           {report.actions.map((act, i) => {
             const priority = i === 0 ? "P0" : i === 1 ? "P1" : "P2";
-            const pColor = i === 0 ? "var(--yima-red)" : i === 1 ? "#f59e0b" : "var(--text-muted)";
+            const pColor = i === 0 ? "var(--brand)" : i === 1 ? "#f59e0b" : "var(--text-muted)";
             return (
               <div key={i} className="glass-card p-4 flex gap-3" style={{ borderLeftWidth: "3px", borderLeftStyle: "solid", borderLeftColor: pColor, borderTopLeftRadius: "12px", borderBottomLeftRadius: "12px" }}>
                 <div className="flex-1">
@@ -874,7 +876,7 @@ function ReportView({ report, scores, info, onRegenerate }: {
 
       {/* Yima Value */}
       <div className="glass-card p-4 sm:p-6" style={{ borderColor: "rgba(192,57,43,0.2)" }}>
-        <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--yima-gold)" }}>逸马如何帮到你</h3>
+        <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--brand-light)" }}>逸马如何帮到你</h3>
         <p className="text-xs sm:text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{report.yima}</p>
       </div>
 
@@ -892,7 +894,7 @@ function ReportView({ report, scores, info, onRegenerate }: {
             <input type="tel" value={phone} onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 11); setPhone(v); }} placeholder="请输入11位手机号"
               className="flex-1 px-4 py-3 rounded-xl text-sm outline-none" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "var(--text-primary)" }} maxLength={11} />
             <button onClick={handleConsult} disabled={phone.length !== 11} className="px-5 py-3 rounded-xl text-sm font-semibold transition-all shrink-0"
-              style={phone.length === 11 ? { background: "var(--yima-red)", color: "white" } : { background: "rgba(255,255,255,0.06)", color: "var(--text-muted)" }}>
+              style={phone.length === 11 ? { background: "var(--brand)", color: "white" } : { background: "rgba(255,255,255,0.06)", color: "var(--text-muted)" }}>
               预约咨询</button>
           </div>
         )}
@@ -901,7 +903,7 @@ function ReportView({ report, scores, info, onRegenerate }: {
       {/* Bottom actions */}
       <div className="flex items-center justify-center gap-4 pt-1 flex-wrap noprint">
         <button onClick={handlePrint} className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all"
-          style={{ background: "var(--yima-red)", color: "white" }}>
+          style={{ background: "var(--brand)", color: "white" }}>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
           导出 PDF
         </button>
@@ -919,7 +921,7 @@ function ReportView({ report, scores, info, onRegenerate }: {
           分享结果
         </button>
         <span style={{ color: "var(--text-muted)" }}>|</span>
-        <button onClick={onRegenerate} className="text-sm font-medium" style={{ color: "var(--yima-red)" }}>
+        <button onClick={onRegenerate} className="text-sm font-medium" style={{ color: "var(--brand)" }}>
           重新生成报告
         </button>
       </div>
