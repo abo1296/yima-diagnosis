@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { questions, industryWarmup } from "@/lib/questions";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { getQuestionsForIndustry, industryWarmup } from "@/lib/questions";
 import { calculateScores } from "@/lib/scoring";
 import { DIMENSION_LABELS, DIMENSION_ORDER, DIMENSION_TIPS, type Question } from "@/lib/types";
 
@@ -31,13 +31,15 @@ const DIM_HUES: Record<string, string> = {
   culture: "260",
 };
 
-function groupByDim(): { dim: string; label: string; questions: Question[] }[] {
-  return DIMENSION_ORDER.map((dim) => ({ dim, label: DIMENSION_LABELS[dim], questions: questions.filter((q) => q.dimension === dim) }));
+function groupByDim(qs: Question[]): { dim: string; label: string; questions: Question[] }[] {
+  return DIMENSION_ORDER.map((dim) => ({ dim, label: DIMENSION_LABELS[dim], questions: qs.filter((q) => q.dimension === dim) }));
 }
-const dimGroups = groupByDim();
 
-const qDimMap: Record<string, string> = {};
-questions.forEach((q) => { qDimMap[q.id] = q.dimension; });
+function buildQDimMap(qs: Question[]): Record<string, string> {
+  const m: Record<string, string> = {};
+  qs.forEach((q) => { m[q.id] = q.dimension; });
+  return m;
+}
 
 // Types
 interface CompanyInfo { industry: string; storeCount: string; }
@@ -70,6 +72,11 @@ export default function Page() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
   }, []);
 
+  // 根据行业动态加载题库
+  const industryQs = useMemo(() => getQuestionsForIndustry(info.industry), [info.industry]);
+  const dimGroups = useMemo(() => groupByDim(industryQs), [industryQs]);
+  const qDimMap = useMemo(() => buildQDimMap(industryQs), [industryQs]);
+
   const handleRestart = () => {
     setAnswers({}); setScores(null); setInfo({ industry: "", storeCount: "" });
     setSurveyStep({ dimIdx: 0, showIntro: true, qIdx: 0 }); setPhase("welcome");
@@ -85,7 +92,7 @@ export default function Page() {
   if (phase === "warmup") return <WarmupScreen questions={industryWarmup[info.industry] || industryWarmup["其他连锁"]} onDone={(ctx) => { setWarmupAnswers(ctx); setSurveyStep({ dimIdx: 0, showIntro: true, qIdx: 0 }); setPhase("survey"); }} />;
   if (phase === "result" && scores) return <ResultScreen scores={scores} info={info} warmupContext={warmupAnswers} onRestart={handleRestart} />;
 
-  return <SurveyFlow answers={answers} saveAnswers={saveAnswers} step={surveyStep} setStep={setSurveyStep} onComplete={(sc) => { setScores(sc); setPhase("result"); localStorage.removeItem(STORAGE_KEY); }} />;
+  return <SurveyFlow answers={answers} saveAnswers={saveAnswers} step={surveyStep} setStep={setSurveyStep} onComplete={(sc) => { setScores(sc); setPhase("result"); localStorage.removeItem(STORAGE_KEY); }} questions={industryQs} dimGroups={dimGroups} qDimMap={qDimMap} />;
 }
 
 // ===== Welcome (Full Landing Page Pro) =====
@@ -406,12 +413,15 @@ function InfoStep({ info, setInfo, onNext }: { info: CompanyInfo; setInfo: (v: C
 }
 
 // ===== Survey Flow =====
-function SurveyFlow({ answers, saveAnswers, step, setStep, onComplete }: {
+function SurveyFlow({ answers, saveAnswers, step, setStep, onComplete, questions, dimGroups, qDimMap }: {
   answers: Record<string, number>;
   saveAnswers: (v: Record<string, number>) => void;
   step: { dimIdx: number; showIntro: boolean; qIdx: number };
   setStep: (v: { dimIdx: number; showIntro: boolean; qIdx: number }) => void;
   onComplete: (sc: ReturnType<typeof calculateScores>) => void;
+  questions: Question[];
+  dimGroups: ReturnType<typeof groupByDim>;
+  qDimMap: Record<string, string>;
 }) {
   const { dimIdx, showIntro, qIdx } = step;
   const dim = dimGroups[dimIdx];
@@ -551,7 +561,7 @@ function WarmupScreen({ questions: wqs, onDone }: {
 }
 
 // ===== Dimension Intro =====
-function DimIntro({ dim, dimIdx, hue, onDone }: { dim: typeof dimGroups[0]; dimIdx: number; hue: string; onDone: () => void }) {
+function DimIntro({ dim, dimIdx, hue, onDone }: { dim: { dim: string; label: string; questions: Question[] }; dimIdx: number; hue: string; onDone: () => void }) {
   useEffect(() => {
     const t = setTimeout(onDone, 1400);
     return () => clearTimeout(t);

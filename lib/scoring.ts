@@ -44,9 +44,8 @@ export function calculateScores(
 }
 
 function getLevel(score: number): string {
-  if (score <= 40) return "初学者";
-  if (score <= 65) return "成长型";
-  if (score <= 85) return "成熟型";
+  if (score <= 40) return "成长型";
+  if (score <= 70) return "成熟型";
   return "领先型";
 }
 
