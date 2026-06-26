@@ -993,31 +993,72 @@ const KEEP_GENERIC_IDS = new Set([
   "supervision_6",
 ]);
 
-const KEEP_INDUSTRY_IDS = new Set([
-  // operation 8→5：裁产品结构管理、空间标准化、持续优化
+// ========== 行业题 × 阶段过滤集（每个阶段 20 题） ==========
+// 创业期：重商业模式验证 + 基础运营，轻数字化
+// 成长期：重标准化建设 + 供应链扩展
+// 扩张期：重人才复制 + 供应链风险
+// 规模期：重数字化 + 精细运营优化
+
+const KEEP_INDUSTRY_IDS_STAGE1 = new Set([
+  // 创业期(1-10家)：商业模式+基础运营+基础培训，数字化最少
   "operation_1","operation_2","operation_3","operation_4","operation_7",
-  // supply_chain 8→5：裁成本优势、新城市扩展、数字化
-  "supply_chain_1","supply_chain_2","supply_chain_3","supply_chain_4","supply_chain_6",
-  // digital 8→5：裁投入力度、线上占比、行业自评
-  "digital_1","digital_2","digital_3","digital_4","digital_7",
-  // model 2→2：保留（单店模型+回本周期行业版最关键）
+  "supply_chain_1","supply_chain_2","supply_chain_3","supply_chain_4",
+  "digital_1","digital_2","digital_4",
   "model_7","model_8",
-  // training 3→2：裁教材形式（上岗+认证更关键）
-  "training_6","training_8",
-  // supervision 3→1：裁神秘顾客、品质信心（巡店重点最核心）
-  "supervision_6",
+  "training_6","training_7","training_8",
+  "supervision_6","supervision_7","supervision_8",
 ]);
 
-// ========== 获取某行业的完整题库 ==========
-export function getQuestionsForIndustry(industry?: string): Question[] {
+const KEEP_INDUSTRY_IDS_STAGE2 = new Set([
+  // 成长期(11-50家)：标准化建设+供应链扩展+数据驱动
+  "operation_1","operation_2","operation_3","operation_4","operation_5","operation_7",
+  "supply_chain_1","supply_chain_2","supply_chain_3","supply_chain_4","supply_chain_6",
+  "digital_1","digital_2","digital_3","digital_4",
+  "model_7",
+  "training_6","training_8",
+  "supervision_6","supervision_7",
+]);
+
+const KEEP_INDUSTRY_IDS_STAGE3 = new Set([
+  // 扩张期(51-200家)：人才复制+供应链风险+数据可见度
+  "operation_3","operation_4","operation_7","operation_8",
+  "supply_chain_3","supply_chain_4","supply_chain_5","supply_chain_6","supply_chain_7",
+  "digital_1","digital_2","digital_3","digital_7",
+  "model_7",
+  "training_6","training_7","training_8",
+  "supervision_6","supervision_7","supervision_8",
+]);
+
+const KEEP_INDUSTRY_IDS_STAGE4 = new Set([
+  // 规模期(200家+)：数字化+供应链优化+精细化运营
+  "operation_4","operation_7","operation_8",
+  "supply_chain_5","supply_chain_6","supply_chain_7","supply_chain_8",
+  "digital_1","digital_2","digital_3","digital_4","digital_5","digital_7","digital_8",
+  "model_8",
+  "training_6","training_8",
+  "supervision_6","supervision_7","supervision_8",
+]);
+
+function getIndustryFilter(storeCount?: string): Set<string> {
+  switch (storeCount) {
+    case "11-50家": return KEEP_INDUSTRY_IDS_STAGE2;
+    case "51-200家": return KEEP_INDUSTRY_IDS_STAGE3;
+    case "200家以上": return KEEP_INDUSTRY_IDS_STAGE4;
+    default: return KEEP_INDUSTRY_IDS_STAGE1; // "1-10家" 或未填
+  }
+}
+
+// ========== 获取某行业×阶段的完整题库 ==========
+export function getQuestionsForIndustry(industry?: string, storeCount?: string): Question[] {
   const overrides = industry ? industryQuestions[industry] : [];
   if (overrides.length === 0) {
     return genericQuestions.filter(q => KEEP_GENERIC_IDS.has(q.id));
   }
   const overrideIds = new Set(overrides.map(q => q.id));
+  const industryFilter = getIndustryFilter(storeCount);
   return [
     ...genericQuestions.filter(q => !overrideIds.has(q.id) && KEEP_GENERIC_IDS.has(q.id)),
-    ...overrides.filter(q => KEEP_INDUSTRY_IDS.has(q.id)),
+    ...overrides.filter(q => industryFilter.has(q.id)),
   ];
 }
 

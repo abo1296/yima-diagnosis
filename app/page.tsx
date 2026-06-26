@@ -76,7 +76,7 @@ export default function Page() {
   }, []);
 
   // 根据行业动态加载题库
-  const industryQs = useMemo(() => getQuestionsForIndustry(info.industry), [info.industry]);
+  const industryQs = useMemo(() => getQuestionsForIndustry(info.industry, info.storeCount), [info.industry, info.storeCount]);
   const dimGroups = useMemo(() => groupByDim(industryQs), [industryQs]);
   const qDimMap = useMemo(() => buildQDimMap(industryQs), [industryQs]);
 
