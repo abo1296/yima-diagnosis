@@ -379,3 +379,58 @@ export const questions: Question[] = [
       { value: 1, label: `"还行""一般般""挺正规的"` },
       { value: 2, label: `"有成长""氛围好""自豪""想一直待下去"` }] },
 ];
+
+// ========== 行业专属预热题 ==========
+// 不参与计分，仅作为 AI 分析的上下文参考
+export const industryWarmup: Record<string, { text: string; options: { value: number; label: string }[] }[]> = {
+  "餐饮": [
+    { text: "你们的翻台率（日均翻台次数）大概是多少？", options: [{ value: 0, label: "不到 2 次" }, { value: 1, label: "2-4 次" }, { value: 2, label: "5 次以上" }] },
+    { text: "外卖占总营收的比例？", options: [{ value: 0, label: "不到 10%" }, { value: 1, label: "10%-30%" }, { value: 2, label: "30% 以上" }] },
+    { text: "核心菜品有多少道 SKU？", options: [{ value: 0, label: "50 道以上" }, { value: 1, label: "20-50 道" }, { value: 2, label: "20 道以内（聚焦爆品）" }] },
+  ],
+  "零售": [
+    { text: "线上线下销售占比？", options: [{ value: 0, label: "纯线下" }, { value: 1, label: "线下为主，线上为辅" }, { value: 2, label: "线上线下各一半以上" }] },
+    { text: "店里 SKU 数量？", options: [{ value: 0, label: "1000 个以上" }, { value: 1, label: "500-1000 个" }, { value: 2, label: "500 个以内精选" }] },
+    { text: "有没有做私域（微信群/企业微信）？", options: [{ value: 0, label: "没做" }, { value: 1, label: "做了，效果一般" }, { value: 2, label: "做了，转化不错" }] },
+  ],
+  "酒店民宿": [
+    { text: "入住率大概多少？", options: [{ value: 0, label: "不到 50%" }, { value: 1, label: "50%-70%" }, { value: 2, label: "70% 以上" }] },
+    { text: "主要获客渠道？", options: [{ value: 0, label: "全靠 OTA（携程/美团）" }, { value: 1, label: "OTA + 自有渠道" }, { value: 2, label: "自有渠道为主" }] },
+  ],
+  "教育培训": [
+    { text: "续费率多少？", options: [{ value: 0, label: "不到 30%" }, { value: 1, label: "30%-60%" }, { value: 2, label: "60% 以上" }] },
+    { text: "老师是专职还是兼职？", options: [{ value: 0, label: "全是兼职" }, { value: 1, label: "核心专职 + 部分兼职" }, { value: 2, label: "全部专职" }] },
+  ],
+  "美容美发": [
+    { text: "会员储值占比？", options: [{ value: 0, label: "不到 10%" }, { value: 1, label: "10%-30%" }, { value: 2, label: "30% 以上" }] },
+    { text: "技师流动率？", options: [{ value: 0, label: "很高，经常走" }, { value: 1, label: "一般" }, { value: 2, label: "较低，核心稳定" }] },
+  ],
+  "健身运动": [
+    { text: "会员月活率？", options: [{ value: 0, label: "不到 20%" }, { value: 1, label: "20%-40%" }, { value: 2, label: "40% 以上" }] },
+    { text: "私教课占比？", options: [{ value: 0, label: "不到 10%" }, { value: 1, label: "10%-30%" }, { value: 2, label: "30% 以上" }] },
+  ],
+  "汽车服务": [
+    { text: "客户年回厂率？", options: [{ value: 0, label: "不到 50%" }, { value: 1, label: "50%-70%" }, { value: 2, label: "70% 以上" }] },
+    { text: "技师认证率？", options: [{ value: 0, label: "没认证" }, { value: 1, label: "部分认证" }, { value: 2, label: "全部持证上岗" }] },
+  ],
+  "医疗健康": [
+    { text: "患者复诊率？", options: [{ value: 0, label: "不到 20%" }, { value: 1, label: "20%-40%" }, { value: 2, label: "40% 以上" }] },
+    { text: "有没有数字化病历系统？", options: [{ value: 0, label: "完全纸质" }, { value: 1, label: "部分数字化" }, { value: 2, label: "全流程数字化" }] },
+  ],
+  "宠物服务": [
+    { text: "会员复购率？", options: [{ value: 0, label: "不到 20%" }, { value: 1, label: "20%-40%" }, { value: 2, label: "40% 以上" }] },
+    { text: "有没有自己的供应链（宠物食品/用品）？", options: [{ value: 0, label: "全靠外部进货" }, { value: 1, label: "有部分自有产品" }, { value: 2, label: "自有品牌为主" }] },
+  ],
+  "便利店": [
+    { text: "日均客流量？", options: [{ value: 0, label: "不到 200 人" }, { value: 1, label: "200-500 人" }, { value: 2, label: "500 人以上" }] },
+    { text: "自有品牌商品占比？", options: [{ value: 0, label: "没有" }, { value: 1, label: "不到 10%" }, { value: 2, label: "10% 以上" }] },
+  ],
+  "服装": [
+    { text: "库存周转天数？", options: [{ value: 0, label: "90 天以上" }, { value: 1, label: "45-90 天" }, { value: 2, label: "45 天以内" }] },
+    { text: "有没有做直播带货？", options: [{ value: 0, label: "没做" }, { value: 1, label: "偶尔做" }, { value: 2, label: "常态化运营" }] },
+  ],
+  "其他连锁": [
+    { text: "你们的核心竞争力是什么？", options: [{ value: 0, label: "价格低" }, { value: 1, label: "位置好" }, { value: 2, label: "产品/服务独特" }] },
+    { text: "最近一年营收趋势？", options: [{ value: 0, label: "下滑" }, { value: 1, label: "持平" }, { value: 2, label: "增长" }] },
+  ],
+};

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { questions } from "@/lib/questions";
+import { questions, industryWarmup } from "@/lib/questions";
 import { calculateScores } from "@/lib/scoring";
 import { DIMENSION_LABELS, DIMENSION_ORDER, type Question } from "@/lib/types";
 
@@ -45,6 +45,7 @@ interface ReportData {
   overview: { headline: string; stage: string; strength: string; risk: string };
   dimensions: { dim: string; score: number; comment: string; tips: string[] }[];
   actions: { title: string; why: string; timeline: string }[];
+  benchmark?: string;
   yima: string;
 }
 
@@ -52,8 +53,9 @@ const INDUSTRIES = ["餐饮","零售","酒店民宿","教育培训","美容美�
 
 // ===== Main =====
 export default function Page() {
-  const [phase, setPhase] = useState<"welcome"|"info"|"survey"|"result">("welcome");
+  const [phase, setPhase] = useState<"welcome"|"info"|"warmup"|"survey"|"result">("welcome");
   const [info, setInfo] = useState<CompanyInfo>({ industry: "", storeCount: "" });
+  const [warmupAnswers, setWarmupAnswers] = useState<string>("");
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [scores, setScores] = useState<ReturnType<typeof calculateScores> | null>(null);
   // Survey: dimension transition or question index within dimension
@@ -75,8 +77,13 @@ export default function Page() {
   };
 
   if (phase === "welcome") return <Welcome onStart={() => setPhase("info")} />;
-  if (phase === "info") return <InfoStep info={info} setInfo={setInfo} onNext={() => { setSurveyStep({ dimIdx: 0, showIntro: true, qIdx: 0 }); setPhase("survey"); }} />;
-  if (phase === "result" && scores) return <ResultScreen scores={scores} info={info} onRestart={handleRestart} />;
+  if (phase === "info") return <InfoStep info={info} setInfo={setInfo} onNext={() => {
+    const wq = industryWarmup[info.industry] || industryWarmup["其他连锁"];
+    if (wq && wq.length > 0) setPhase("warmup");
+    else { setSurveyStep({ dimIdx: 0, showIntro: true, qIdx: 0 }); setPhase("survey"); }
+  }} />;
+  if (phase === "warmup") return <WarmupScreen questions={industryWarmup[info.industry] || industryWarmup["其他连锁"]} onDone={(ctx) => { setWarmupAnswers(ctx); setSurveyStep({ dimIdx: 0, showIntro: true, qIdx: 0 }); setPhase("survey"); }} />;
+  if (phase === "result" && scores) return <ResultScreen scores={scores} info={info} warmupContext={warmupAnswers} onRestart={handleRestart} />;
 
   return <SurveyFlow answers={answers} saveAnswers={saveAnswers} step={surveyStep} setStep={setSurveyStep} onComplete={(sc) => { setScores(sc); setPhase("result"); localStorage.removeItem(STORAGE_KEY); }} />;
 }
@@ -258,6 +265,49 @@ function SurveyFlow({ answers, saveAnswers, step, setStep, onComplete }: {
   );
 }
 
+// ===== Warmup Screen =====
+function WarmupScreen({ questions: wqs, onDone }: {
+  questions: { text: string; options: { value: number; label: string }[] }[];
+  onDone: (ctx: string) => void;
+}) {
+  const [idx, setIdx] = useState(0);
+  const [answers, setAnswers] = useState<string[]>([]);
+  const currentQ = wqs[idx];
+  const handleSelect = (val: number, label: string) => {
+    const next = [...answers, `${currentQ.text} → ${label}`];
+    setAnswers(next);
+    if (idx >= wqs.length - 1) {
+      setTimeout(() => onDone(next.join("；")), 300);
+    } else {
+      setTimeout(() => setIdx(idx + 1), 300);
+    }
+  };
+  return (
+    <div className="flex flex-col min-h-[100dvh]" style={{ background: "var(--bg-primary)" }}>
+      <div className="sticky top-0 z-10 px-4 py-3" style={{ background: "rgba(10,10,15,0.95)" }}>
+        <div className="progress-line mx-auto max-w-xl">
+          <div className="progress-line-fill" style={{ width: `${Math.round((idx / Math.max(wqs.length, 1)) * 100)}%` }} />
+        </div>
+        <p className="text-[11px] mt-2 text-center" style={{ color: "var(--text-muted)" }}>
+          <span style={{ color: "var(--yima-gold)" }}>行业定制 </span>{idx + 1}/{wqs.length}
+        </p>
+      </div>
+      <main className="flex-1 flex flex-col items-center justify-center px-5">
+        <div className="w-full max-w-lg animate-slide-up" key={idx}>
+          <p className="text-center font-semibold mb-10 leading-relaxed" style={{ fontSize: "18px", color: "var(--text-primary)" }}>{currentQ.text}</p>
+          <div className="space-y-2.5">
+            {currentQ.options.map((opt) => (
+              <button key={opt.value} className="option-btn" onClick={() => handleSelect(opt.value, opt.label)}>
+                <span className="option-dot" />{opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
 // ===== Dimension Intro =====
 function DimIntro({ dim, dimIdx, hue, onDone }: { dim: typeof dimGroups[0]; dimIdx: number; hue: string; onDone: () => void }) {
   useEffect(() => {
@@ -295,7 +345,7 @@ function CompleteScreen({ scores, onSubmit }: { scores: ReturnType<typeof calcul
 }
 
 // ===== Result Screen =====
-function ResultScreen({ scores, info, onRestart }: { scores: ReturnType<typeof calculateScores>; info: CompanyInfo; onRestart: () => void }) {
+function ResultScreen({ scores, info, warmupContext, onRestart }: { scores: ReturnType<typeof calculateScores>; info: CompanyInfo; warmupContext: string; onRestart: () => void }) {
   const [displayScore, setDisplayScore] = useState(0);
   const [showLevel, setShowLevel] = useState(false);
   const [genStatus, setGenStatus] = useState<"loading"|"done"|"error">("loading");
@@ -328,7 +378,7 @@ function ResultScreen({ scores, info, onRestart }: { scores: ReturnType<typeof c
       try {
         const resp = await fetch("/api/generate-report", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ overall_score: scores.overall_score, level: scores.level, scores: scores.scores, answers: scores.answers, industry: info.industry, storeCount: info.storeCount }),
+          body: JSON.stringify({ overall_score: scores.overall_score, level: scores.level, scores: scores.scores, answers: scores.answers, industry: info.industry, storeCount: info.storeCount, warmup: warmupContext }),
         });
         const data = await resp.json();
         if (!resp.ok) throw new Error(data.error || "请求失败");
@@ -495,6 +545,14 @@ function ReportView({ report, scores, info, onRegenerate }: {
           <OCard icon="⚠️" label="最大风险" val={report.overview.risk} color />
         </div>
       </div>
+
+      {/* Benchmark */}
+      {report.benchmark && (
+        <div className="glass-card p-4 sm:p-6" style={{ borderColor: "rgba(212,168,83,0.3)" }}>
+          <h3 className="text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--yima-gold)" }}>行业对比</h3>
+          <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{report.benchmark}</p>
+        </div>
+      )}
 
       {/* Dimension Analysis */}
       <div className="glass-card p-4 sm:p-6">

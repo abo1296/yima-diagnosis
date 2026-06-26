@@ -7,14 +7,15 @@ interface ReportRequest {
   answers: Record<string, number>;
   industry?: string;
   storeCount?: string;
+  warmup?: string;
 }
 
 export async function POST(request: Request) {
   try {
     const body: ReportRequest = await request.json();
-    const { overall_score, level, scores, industry, storeCount } = body;
+    const { overall_score, level, scores, industry, storeCount, warmup } = body;
 
-    const prompt = buildPrompt(overall_score, level, scores, industry, storeCount);
+    const prompt = buildPrompt(overall_score, level, scores, industry, storeCount, warmup);
 
     const baseUrl = (process.env.ANTHROPIC_BASE_URL || "https://ai.lehe.com").replace(/\/+$/, "");
     const authToken = process.env.ANTHROPIC_AUTH_TOKEN || "sk-ri2SiLredMTWyPaT96h0kbkFMgWjvfwa7Q80BLl3hocQlNwb";
@@ -142,6 +143,7 @@ function buildPrompt(
   scores: Record<string, number>,
   industry?: string,
   storeCount?: string,
+  warmup?: string,
 ): string {
   const dimList = DIMENSION_ORDER.map((dim) => {
     const score = scores[dim] || 0;
@@ -155,19 +157,22 @@ function buildPrompt(
   if (industry) context.push(`行业：${industry}`);
   if (storeCount) context.push(`门店数：${storeCount}`);
   const contextStr = context.length > 0 ? `\n企业背景：${context.join("，")}` : "";
-  const industryHint = industry ? `\n注意：该企业属于${industry}行业，诊断分析和建议需针对${industry}连锁特性。` : "";
+  const industryHint = industry ? `\n该企业属于${industry}行业，诊断分析和建议需针对${industry}连锁特性（如${industry === "餐饮" ? "翻台率、食安、菜品标准化" : industry === "零售" ? "库存周转、坪效、全渠道" : industry === "酒店民宿" ? "入住率、OTA依赖度、服务标准化" : industry === "教育培训" ? "续费率、师资复制、课程标准化" : industry === "美容美发" ? "会员储值、技师留存、服务一致性" : industry === "健身运动" ? "会员活跃度、私教转化、场地利用率" : industry === "汽车服务" ? "回厂率、技师认证、配件供应链" : industry === "医疗健康" ? "复诊率、诊疗标准化、数字化病历" : industry === "宠物服务" ? "复购率、自有品牌、服务标准化" : "标准化复制能力"}）。` : "";
+  const warmupHint = warmup ? `\n行业预热调研：${warmup}` : "";
+  const benchmarkHint = industry ? `\n请对比${industry}行业典型连锁企业的分数分布（通常该行业平均综合得分在45-55分之间，领先企业可达70+），指出该企业与行业对比的差距和机会。` : "";
 
-  return `连锁企业诊断数据：综合${overall_score}分，等级${level}。维度得分：${dimList}。${contextStr}${industryHint}
+  return `连锁企业诊断数据：综合${overall_score}分，等级${level}。维度得分：${dimList}。${contextStr}${industryHint}${warmupHint}${benchmarkHint}
 
 请只输出一行完整JSON，严格遵守以下格式（注意引号和逗号，不要有语法错误）：
 
-{"overview":{"headline":"20字内","stage":"15字内","strength":"30字内","risk":"30字内"},"dimensions":[{"dim":"维度名","score":分数,"comment":"25字内","tips":["建议1","建议2"]}],"actions":[{"title":"15字内","why":"20字内","timeline":"周期"}],"yima":"逸马价值80字内"}
+{"overview":{"headline":"20字内","stage":"15字内","strength":"30字内","risk":"30字内"},"dimensions":[{"dim":"维度名","score":分数,"comment":"25字内","tips":["建议1","建议2"]}],"actions":[{"title":"15字内","why":"20字内","timeline":"周期"}],"benchmark":"与同行业对比一句话(50字内)","yima":"逸马价值80字内"}
 
 强制规则：
 - 输出必须是一行合法JSON，不要换行，不要markdown代码块
 - 所有键和字符串用英文双引号
 - dimensions必须包含全部9个维度，按得分从低到高排列
+- benchmark字段需基于行业特性给出对比分析
 - actions给3条最优先行动
 - tips每个维度2条建议
-- 总字数控制在800字以内`;
+- 总字数控制在900字以内`;
 }
