@@ -435,10 +435,39 @@ function SurveyFlow({ answers, saveAnswers, step, setStep, onComplete, questions
   const totalAnswered = questions.filter((q) => answers[q.id] !== undefined).length;
   const progress = Math.round((totalAnswered / questions.length) * 100);
 
+  // 维度导航数据
+  const completedDims = dimGroups.filter(dg => dg.questions.every(q => answers[q.id] !== undefined)).length;
+  const remainingQs = questions.length - totalAnswered;
+  const estMinutes = Math.max(1, Math.ceil(remainingQs * 0.15));
+
   // Dimension intro
   if (showIntro) {
     const hue = DIM_HUES[dim.dim] || "220";
-    return <DimIntro dim={dim} dimIdx={dimIdx} hue={hue} onDone={() => setStep({ dimIdx, showIntro: false, qIdx: 0 })} />;
+    return (
+      <>
+        {/* 维度导航条 (intro期间也显示) */}
+        <div className="sticky top-0 z-10 px-3 py-2" style={{ background: "rgba(10,10,15,0.95)", backdropFilter: "blur(10px)" }}>
+          <div className="mx-auto max-w-xl" style={{ display:"flex", alignItems:"center", gap:4, overflow:"hidden" }}>
+            {dimGroups.map((dg, i) => {
+              const done = dg.questions.every(q => answers[q.id] !== undefined);
+              const active = i === dimIdx;
+              return (
+                <div key={dg.dim} style={{
+                  flex:1, height:3, borderRadius:2,
+                  background: done ? "var(--brand)" : active ? `hsl(${DIM_HUES[dg.dim] || "220"},60%,45%)` : "rgba(255,255,255,0.06)",
+                  transition: "background .4s"
+                }} title={dg.label} />
+              );
+            })}
+          </div>
+          <div className="mx-auto max-w-xl" style={{ display:"flex", justifyContent:"space-between", marginTop:4, fontSize:10, color:"var(--text-muted)" }}>
+            <span>已完成 {completedDims}/{dimGroups.length} 维度</span>
+            <span>还剩约 {estMinutes} 分钟</span>
+          </div>
+        </div>
+        <DimIntro dim={dim} dimIdx={dimIdx} hue={hue} onDone={() => setStep({ dimIdx, showIntro: false, qIdx: 0 })} />
+      </>
+    );
   }
 
   // All dimensions done
@@ -465,7 +494,6 @@ function SurveyFlow({ answers, saveAnswers, step, setStep, onComplete, questions
   const handleSelect = (qId: string, val: number) => {
     saveAnswers({ ...answers, [qId]: val });
     if (isLastQ) {
-      // Move to next dimension or complete
       setTimeout(() => {
         const nextDim = dimIdx + 1;
         if (nextDim >= dimGroups.length) {
@@ -473,9 +501,9 @@ function SurveyFlow({ answers, saveAnswers, step, setStep, onComplete, questions
         } else {
           setStep({ dimIdx: nextDim, showIntro: true, qIdx: 0 });
         }
-      }, 350);
+      }, 500);
     } else {
-      setTimeout(() => setStep({ dimIdx, showIntro: false, qIdx: qIdx + 1 }), 350);
+      setTimeout(() => setStep({ dimIdx, showIntro: false, qIdx: qIdx + 1 }), 500);
     }
   };
 
@@ -491,15 +519,35 @@ function SurveyFlow({ answers, saveAnswers, step, setStep, onComplete, questions
 
   return (
     <div className="flex flex-col min-h-[100dvh]" style={{ background: "var(--bg)" }}>
-      {/* Progress line */}
-      <div className="sticky top-0 z-10 px-4 py-3" style={{ background: "rgba(10,10,15,0.95)", backdropFilter: "blur(10px)" }}>
-        <div className="progress-line mx-auto max-w-xl">
-          <div className="progress-line-fill" style={{ width: `${progress}%` }} />
+      {/* 维度导航条 */}
+      <div className="sticky top-0 z-10 px-3 py-2" style={{ background: "rgba(10,10,15,0.95)", backdropFilter: "blur(10px)" }}>
+        <div className="mx-auto max-w-xl" style={{ display:"flex", alignItems:"center", gap:4 }}>
+          {dimGroups.map((dg, i) => {
+            const done = dg.questions.every(q => answers[q.id] !== undefined);
+            const active = i === dimIdx;
+            return (
+              <div key={dg.dim} style={{
+                flex:1, height:3, borderRadius:2,
+                background: done ? "var(--brand)" : active ? `hsl(${DIM_HUES[dg.dim] || "220"},60%,45%)` : "rgba(255,255,255,0.06)",
+                transition: "background .4s"
+              }} title={dg.label} />
+            );
+          })}
+        </div>
+        <div className="mx-auto max-w-xl" style={{ display:"flex", justifyContent:"space-between", marginTop:4, fontSize:10, color:"var(--text-muted)" }}>
+          <span>{dim.label} · {qIdx + 1}/{dim.questions.length} 题</span>
+          <span>{completedDims}/{dimGroups.length} 维度 · 剩 ~{estMinutes} 分钟</span>
         </div>
       </div>
 
       <main className="flex-1 flex flex-col items-center justify-center px-5" style={{ minHeight: "calc(100dvh - 80px)" }}>
         <div className="w-full max-w-lg animate-slide-up" key={`${dimIdx}-${qIdx}`}>
+          {/* 首题续答提示 */}
+          {dimIdx === 0 && qIdx === 0 && (
+            <p className="text-center mb-6 text-xs" style={{ color: "var(--text-muted)" }}>
+              💡 答题进度实时保存，可随时退出续答
+            </p>
+          )}
           {/* Question */}
           <p className="text-center font-semibold mb-10 leading-relaxed" style={{ fontSize: "20px", color: "var(--text-primary)" }}>
             {currentQ.text}
@@ -600,15 +648,59 @@ function DimIntro({ dim, dimIdx, hue, onDone }: { dim: { dim: string; label: str
 
 // ===== Complete Screen =====
 function CompleteScreen({ scores, onSubmit }: { scores: ReturnType<typeof calculateScores>; onSubmit: () => void }) {
+  const sorted = DIMENSION_ORDER
+    .map(dim => ({ dim, label: DIMENSION_LABELS[dim], score: scores.scores[dim] || 0 }))
+    .sort((a, b) => b.score - a.score);
+  const tops = sorted.slice(0, 2);
+  const lows = sorted.slice(-2).reverse();
+
+  // Mini static radar points
+  const radarPts = DIMENSION_ORDER.map((dim, i) => {
+    const sc = scores.scores[dim] || 0;
+    const a = (2 * Math.PI / 9) * i - Math.PI / 2;
+    const r = (sc / 100) * 70;
+    return `${100 + r * Math.cos(a)},${100 + r * Math.sin(a)}`;
+  }).join(" ");
+
+  const totalQs = Object.keys(scores.answers).length;
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[100dvh] px-5" style={{ background: "var(--bg)" }}>
-      <div className="text-center animate-pop-in">
+      <div className="text-center animate-pop-in max-w-sm w-full">
         <div className="text-5xl mb-4">✓</div>
-        <h2 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>诊断完成</h2>
-        <p className="text-sm mb-8" style={{ color: "var(--text-secondary)" }}>全部题目完成，查看你的连锁成熟度报告</p>
+        <h2 className="text-xl sm:text-2xl font-bold mb-1" style={{ color: "var(--text-primary)" }}>{totalQs} 题完成</h2>
+        <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>AI 已分析你的答题数据，以下是初步发现</p>
+
+        {/* Mini Radar */}
+        <div className="mb-5" style={{ display:"flex", justifyContent:"center" }}>
+          <svg viewBox="0 0 200 200" width="160" height="160">
+            {[25,50,75].map(r => <circle key={r} cx="100" cy="100" r={r} fill="none" stroke="rgba(59,130,246,0.06)" strokeWidth="0.5" />)}
+            <polygon points={radarPts} fill="rgba(59,130,246,0.12)" stroke="#3B82F6" strokeWidth="1.2" />
+            {DIMENSION_ORDER.map((dim, i) => {
+              const sc = scores.scores[dim] || 0;
+              const a = (2 * Math.PI / 9) * i - Math.PI / 2;
+              const r = (sc / 100) * 70;
+              return <circle key={dim} cx={100 + r * Math.cos(a)} cy={100 + r * Math.sin(a)} r="2.5" fill="#60A5FA" />;
+            })}
+          </svg>
+        </div>
+
+        {/* Score preview */}
+        <div className="glass-card p-4 mb-5 text-left text-sm" style={{ borderRadius:14 }}>
+          <p className="text-xs mb-2" style={{ color: "var(--text-muted)" }}>初步分析</p>
+          <div className="mb-2">
+            <span style={{ color: "#10b981", fontSize:11, fontWeight:600 }}>偏强 </span>
+            <span style={{ color: "var(--text-primary)" }}>{tops[0].label}、{tops[1].label}</span>
+          </div>
+          <div>
+            <span style={{ color: "#f59e0b", fontSize:11, fontWeight:600 }}>可能短板 </span>
+            <span style={{ color: "var(--text-primary)" }}>{lows[0].label}、{lows[1].label}</span>
+          </div>
+        </div>
+
         <button onClick={onSubmit} className="animate-breathe px-10 py-4 rounded-xl font-bold text-base transition-all"
           style={{ background: "linear-gradient(135deg,#3B82F6,#2563EB)", color:"#fff", boxShadow:"0 0 20px rgba(59,130,246,0.3)" }}>
-          查看我的诊断报告 →
+          生成完整诊断报告 →
         </button>
       </div>
     </div>
