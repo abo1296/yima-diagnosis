@@ -54,7 +54,7 @@ interface ReportData {
   nextStep?: string;
 }
 
-const INDUSTRIES = ["餐饮","零售","酒店民宿","教育培训","美容美发","健身运动","汽车服务","医疗健康","宠物服务","便利店","服装","其他连锁"];
+const INDUSTRIES = ["餐饮","零售","医药","教育","服饰","酒类","家电","酒店民宿","美容美发","健身运动","汽车服务","宠物服务","便利店","其他连锁"];
 
 // ===== Main =====
 export default function Page() {
