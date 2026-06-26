@@ -1,4 +1,4 @@
-function getKV() {
+﻿function getKV() {
   try {
     // ES Module Worker: process.env 暴露绑定
     const env = process.env as any;
@@ -46,9 +46,11 @@ export async function POST(request: Request) {
       }));
     }
 
-    const webhook = ((process.env as any)?.LEADS_WEBHOOK_URL) || ((globalThis as any)?.LEADS_WEBHOOK_URL) || "https://open.feishu.cn/open-apis/bot/v2/hook/e62aa6ed-ff47-459a-b344-b1d4a698ad55";
+    const WEBHOOK_URL = "https://open.feishu.cn/open-apis/bot/v2/hook/e62aa6ed-ff47-459a-b344-b1d4a698ad55";
+    const webhook = ((process.env as any)?.LEADS_WEBHOOK_URL) || ((globalThis as any)?.LEADS_WEBHOOK_URL) || WEBHOOK_URL;
     if (webhook) {
-      try { await fetch(webhook, { method: "POST", headers: { "Content-Type": "application/json; charset=utf-8" }, body: JSON.stringify({ msg_type: "text", content: { text: `📞新线索\n手机：${phone}\n行业：${industry||"-"}\n门店：${storeCount||"-"}\n得分：${score||"-"}（${level||"-"}）` } }) }); } catch {}
+      const text = `\u{1F4DE}\u65b0\u7ebf\u7d22\n\u624b\u673a\uff1a${phone}\n\u884c\u4e1a\uff1a${industry||"-"}\n\u95e8\u5e97\uff1a${storeCount||"-"}\n\u5f97\u5206\uff1a${score||"-"}\uff08${level||"-"}\uff09`;
+      try { await fetch(webhook, { method: "POST", headers: { "Content-Type": "application/json; charset=utf-8" }, body: new TextEncoder().encode(JSON.stringify({ msg_type: "text", content: { text } })) }); } catch {}
     }
 
     console.log(`[LEAD] ${phone} ${industry} ${storeCount} ${score} ${level}`);
