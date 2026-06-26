@@ -870,6 +870,19 @@ function getRating(gap: number): string {
   return "薄弱";
 }
 
+function getIndustryLeading(industry?: string): Record<string, number> {
+  const m: Record<string, Record<string, number>> = {
+    "餐饮": { strategy: 88, model: 85, operation: 82, organization: 78, supply_chain: 80, training: 75, supervision: 76, digital: 68, culture: 85 },
+    "零售": { strategy: 85, model: 82, operation: 80, organization: 75, supply_chain: 78, training: 72, supervision: 74, digital: 70, culture: 80 },
+    "服饰": { strategy: 83, model: 80, operation: 78, organization: 72, supply_chain: 75, training: 70, supervision: 72, digital: 68, culture: 78 },
+    "医药": { strategy: 80, model: 75, operation: 82, organization: 72, supply_chain: 76, training: 68, supervision: 78, digital: 62, culture: 75 },
+    "教育": { strategy: 78, model: 72, operation: 75, organization: 75, supply_chain: 60, training: 78, supervision: 70, digital: 60, culture: 80 },
+    "酒类": { strategy: 75, model: 72, operation: 72, organization: 68, supply_chain: 80, training: 65, supervision: 68, digital: 58, culture: 72 },
+    "家电": { strategy: 78, model: 75, operation: 75, organization: 72, supply_chain: 72, training: 68, supervision: 70, digital: 65, culture: 75 },
+  };
+  return m[industry || ""] || { strategy: 80, model: 78, operation: 76, organization: 72, supply_chain: 74, training: 70, supervision: 72, digital: 65, culture: 78 };
+}
+
 // ===== 新版报告 View =====
 function NewReportView({ scores, report, error, info, barsAnimated, onRestart }: {
   scores: ReturnType<typeof calculateScores>;
@@ -884,7 +897,10 @@ function NewReportView({ scores, report, error, info, barsAnimated, onRestart }:
   const [showFloatCTA, setShowFloatCTA] = useState(false);
   const floatSentinelRef = useRef<HTMLDivElement>(null);
   const industryAvgs = useMemo(() => getIndustryAverages(info.industry), [info.industry]);
+  const industryLeading = useMemo(() => getIndustryLeading(info.industry), [info.industry]);
   const radarRef = useRef<HTMLDivElement>(null);
+
+  const today = new Date().toLocaleDateString("zh-CN", { year:"numeric", month:"long", day:"numeric" });
 
   const percentile = scores.overall_score >= 70 ? 82 : scores.overall_score >= 50 ? 55 : 28;
   const levelColor = scores.level === "领先型" ? "#10b981" : scores.level === "成熟型" ? "#3b82f6" : "#f59e0b";
@@ -951,6 +967,13 @@ function NewReportView({ scores, report, error, info, barsAnimated, onRestart }:
 
   return (
     <>
+      {/* ===== Report Header (身份标识) ===== */}
+      <div className="stagger" style={{ textAlign:"center", marginBottom:32 }}>
+        <p style={{ fontSize:12, color:"var(--text-muted)", letterSpacing:1 }}>
+          {info.industry || "连锁"} · {info.storeCount || "未知规模"} · {today}诊断
+        </p>
+      </div>
+
       {/* ===== Score Summary Bar ===== */}
       <div className="act-bar stagger">
         <span style={{ fontSize: 36, fontWeight: 900, background: "linear-gradient(180deg,#F59E0B,#FDE68A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{scores.overall_score}</span>
@@ -1029,6 +1052,15 @@ function NewReportView({ scores, report, error, info, barsAnimated, onRestart }:
                 return <circle key={dim} cx={x} cy={y} r="3" fill="#60A5FA" />;
               })}
             </svg>
+            {/* Radar legend */}
+            <div style={{ textAlign:"center", marginTop:6 }}>
+              <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:10, color:"var(--text-muted)", marginRight:16 }}>
+                <span style={{ width:12, height:2, background:"#3B82F6", display:"inline-block" }} /> 你的得分
+              </span>
+              <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:10, color:"var(--text-muted)" }}>
+                <span style={{ width:12, height:2, borderTop:"1.5px dashed rgba(148,163,184,0.4)", display:"inline-block" }} /> 行业均值
+              </span>
+            </div>
           </div>
           {/* Bar chart */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1056,24 +1088,26 @@ function NewReportView({ scores, report, error, info, barsAnimated, onRestart }:
 
       {/* ===== Benchmark Table ===== */}
       <div className="s-section stagger">
-        <h3 className="s-title">行业对标 <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 400 }}>（虚线 = {info.industry || "行业"}均值）</span></h3>
+        <h3 className="s-title">行业对标</h3>
         <div className="glass-card" style={{ overflow: "hidden" }}>
           <table className="cmp-table">
-            <thead><tr><th>维度</th><th>你的得分</th><th>行业平均</th><th>差距</th><th>评级</th></tr></thead>
+            <thead><tr><th>维度</th><th>你的得分</th><th>行业平均</th><th>领先水平</th><th>差距(领先)</th><th>评级</th></tr></thead>
             <tbody>
               {DIMENSION_ORDER.map((dim) => {
                 const my = scores.scores[dim] || 0;
                 const avg = industryAvgs[dim] || 50;
-                const gap = my - avg;
+                const leading = industryLeading[dim] || 75;
+                const gapLeading = my - leading;
                 let dot = "#EF4444"; if (my >= 66) dot = "#10B981"; else if (my >= 41) dot = "#F59E0B";
                 return (
                   <tr key={dim}>
                     <td><span className="dot-ind" style={{ background: dot }} />{DIMENSION_LABELS[dim]}</td>
                     <td><b>{my}</b></td>
                     <td style={{ color: "var(--text-muted)" }}>{avg}</td>
-                    <td className={gap >= 0 ? "gap-up" : "gap-down"}>{gap >= 0 ? `↑ +${gap}` : `↓ ${gap}`}</td>
-                    <td style={{ color: gap >= 3 ? "#10B981" : gap >= -3 ? "var(--text-muted)" : "#EF4444", fontWeight: 600, fontSize: 12 }}>
-                      {getRating(gap)}
+                    <td style={{ color: "var(--brand-light)", fontWeight:600 }}>{leading}</td>
+                    <td className={gapLeading >= 0 ? "gap-up" : "gap-down"}>{gapLeading >= 0 ? `↑ +${gapLeading}` : `↓ ${gapLeading}`}</td>
+                    <td style={{ color: gapLeading >= 0 ? "#10B981" : gapLeading >= -10 ? "var(--text-muted)" : "#EF4444", fontWeight: 600, fontSize: 12 }}>
+                      {gapLeading >= 0 ? "领先" : gapLeading >= -10 ? "待提升" : "薄弱"}
                     </td>
                   </tr>
                 );
