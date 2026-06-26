@@ -444,6 +444,18 @@ function SurveyFlow({ answers, saveAnswers, step, setStep, onComplete, questions
   }
 
   const currentQ = dim.questions[qIdx];
+
+  // Guard: skip dimensions with no questions
+  if (!currentQ) {
+    const nextDim = dimIdx + 1;
+    if (nextDim >= dimGroups.length) {
+      const s = calculateScores(answers, qDimMap);
+      return <CompleteScreen scores={s} onSubmit={() => onComplete(s)} />;
+    }
+    setStep({ dimIdx: nextDim, showIntro: true, qIdx: 0 });
+    return <div />;
+  }
+
   const isLastQ = qIdx >= dim.questions.length - 1;
 
   const handleSelect = (qId: string, val: number) => {
@@ -606,6 +618,7 @@ function ResultScreen({ scores, info, warmupContext, onRestart }: { scores: Retu
   const [report, setReport] = useState<ReportData | null>(null);
   const [error, setError] = useState("");
   const [barsAnimated, setBarsAnimated] = useState(false);
+  const [dots, setDots] = useState(0);
   const startedRef = useRef(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -649,6 +662,13 @@ function ResultScreen({ scores, info, warmupContext, onRestart }: { scores: Retu
     return () => clearInterval(timer);
   }, [phase, scores.overall_score]);
 
+  // Loading dots animation
+  useEffect(() => {
+    if (phase !== "loading") return;
+    const t = setInterval(() => setDots(d => (d + 1) % 4), 400);
+    return () => clearInterval(t);
+  }, [phase]);
+
   // Dismiss reveal on scroll or click
   const dismissReveal = useCallback(() => {
     setPhase("report");
@@ -659,7 +679,8 @@ function ResultScreen({ scores, info, warmupContext, onRestart }: { scores: Retu
     if (phase !== "reveal") return;
     const handler = () => { dismissReveal(); };
     window.addEventListener("wheel", handler, { once: true });
-    return () => window.removeEventListener("wheel", handler);
+    window.addEventListener("touchmove", handler, { once: true });
+    return () => { window.removeEventListener("wheel", handler); window.removeEventListener("touchmove", handler); };
   }, [phase, dismissReveal]);
 
   return (
@@ -673,7 +694,7 @@ function ResultScreen({ scores, info, warmupContext, onRestart }: { scores: Retu
             <div className="load-icon-pulse">🔍</div>
           </div>
           <p style={{ marginTop: 24, fontSize: 16, color: "var(--text-secondary)", letterSpacing: 1 }}>
-            逸马AI 正在分析你的连锁体系<span className="load-dots" />
+            逸马AI 正在分析你的连锁体系{".".repeat(dots)}
           </p>
         </div>
       )}
@@ -966,6 +987,9 @@ function NewReportView({ scores, report, error, info, barsAnimated, onRestart }:
         </div>
       </div>
 
+      {/* Sentinel for float CTA — 过半屏触发 */}
+      <div ref={floatSentinelRef} />
+
       {/* ===== Strengths & Improvements ===== */}
       <div className="sw-grid-r stagger">
         <div className="sw-card-r good">
@@ -1075,8 +1099,6 @@ function NewReportView({ scores, report, error, info, barsAnimated, onRestart }:
       </div>
 
       {/* Sentinel for float CTA */}
-      <div ref={floatSentinelRef} />
-
       {/* ===== Footer ===== */}
       <footer style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--text-muted)", paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.04)", flexWrap: "wrap", gap: 8 }}>
         <span>© 2026 逸马诊断 yima777.cn</span>
