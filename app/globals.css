@@ -145,5 +145,5 @@ body {
 @media print {
   body { background: white !important; color: black !important; }
   .glass-card { background: white; border: 1px solid #ddd; backdrop-filter: none; }
-  button, .cta-section { display: none !important; }
+  button, .noprint, .cta-section { display: none !important; }
 }

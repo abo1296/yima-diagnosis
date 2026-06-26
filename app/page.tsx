@@ -626,7 +626,7 @@ function ReportView({ report, scores, info, onRegenerate }: {
       </div>
 
       {/* CTA */}
-      <div className="glass-card p-4 sm:p-6">
+      <div className="glass-card p-4 sm:p-6 noprint">
         <h3 className="text-sm font-bold mb-2" style={{ color: "var(--text-primary)" }}>获取专属改进方案</h3>
         <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>留下手机号，逸马顾问将为您定制深度解读与改进路线图。</p>
         {submitted ? (
@@ -646,10 +646,24 @@ function ReportView({ report, scores, info, onRegenerate }: {
       </div>
 
       {/* Bottom actions */}
-      <div className="flex items-center justify-center gap-4 pt-1 flex-wrap">
-        <button onClick={handlePrint} className="text-xs font-medium flex items-center gap-1" style={{ color: "var(--text-secondary)" }}>
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-          下载 PDF
+      <div className="flex items-center justify-center gap-4 pt-1 flex-wrap noprint">
+        <button onClick={handlePrint} className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all"
+          style={{ background: "var(--yima-red)", color: "white" }}>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+          导出 PDF
+        </button>
+        <span style={{ color: "var(--text-muted)" }}>|</span>
+        <button onClick={() => {
+          const url = `${window.location.origin}/share?score=${scores.overall_score}&level=${encodeURIComponent(scores.level)}`;
+          if (navigator.share) {
+            navigator.share({ title: "逸马诊断", text: `我的连锁得分：${scores.overall_score}分（${scores.level}）`, url }).catch(() => {});
+          } else {
+            navigator.clipboard.writeText(url).then(() => alert("分享链接已复制！")).catch(() => {});
+          }
+        }} className="px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all"
+          style={{ background: "rgba(255,255,255,0.08)", color: "var(--text-primary)", border: "1px solid rgba(255,255,255,0.12)" }}>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+          分享结果
         </button>
         <span style={{ color: "var(--text-muted)" }}>|</span>
         <button onClick={onRegenerate} className="text-sm font-medium" style={{ color: "var(--yima-red)" }}>
