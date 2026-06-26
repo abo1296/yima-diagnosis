@@ -780,11 +780,16 @@ function NewReportView({ scores, report, error, info, barsAnimated, onRestart }:
   const strengths = sortedDims.slice(0, 3);
   const improvements = sortedDims.slice(-3).reverse();
 
-  // AI report dimensions mapped by dim name for comments
+  // AI report dimensions mapped by both Chinese dim name and English key
   const reportDimMap = useMemo(() => {
-    if (!report) return {};
+    if (!report) return {} as Record<string, string>;
     const m: Record<string, string> = {};
-    report.dimensions.forEach(d => { m[d.dim] = d.comment; });
+    report.dimensions.forEach(d => {
+      m[d.dim] = d.comment;
+      // 反向映射：从中文标签找到英文 key
+      const engKey = Object.entries(DIMENSION_LABELS).find(([, v]) => v === d.dim)?.[0];
+      if (engKey) m[engKey] = d.comment;
+    });
     return m;
   }, [report]);
 
@@ -969,7 +974,7 @@ function NewReportView({ scores, report, error, info, barsAnimated, onRestart }:
             {strengths.map((s, i) => (
               <li key={s.dim}>
                 <span style={{ color: "#10B981", flexShrink: 0 }}>✓</span>
-                <span>{reportDimMap[s.label] || s.label}{s.score}分 — 继续保持并放大这个优势</span>
+                <span>{reportDimMap[s.dim] || s.label} · {s.score}分</span>
               </li>
             ))}
           </ul>
@@ -980,7 +985,7 @@ function NewReportView({ scores, report, error, info, barsAnimated, onRestart }:
             {improvements.map((s, i) => (
               <li key={s.dim}>
                 <span style={{ color: "#F59E0B", flexShrink: 0, fontWeight: 700 }}>!</span>
-                <span>{reportDimMap[s.label] || s.label}{s.score}分 — 优先投入资源改善</span>
+                <span>{reportDimMap[s.dim] || s.label} · {s.score}分</span>
               </li>
             ))}
           </ul>
