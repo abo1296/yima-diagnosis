@@ -12,8 +12,8 @@
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { phone, industry, storeCount, score, level, action } = body;
+    const body = await request.text();
+    const { phone, industry, storeCount, score, level, action } = JSON.parse(body);
 
     if (action === "list") {
       const kv = getKV();
