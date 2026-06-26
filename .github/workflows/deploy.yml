@@ -19,6 +19,9 @@ jobs:
       - name: OpenNext Build
         run: npx opennextjs-cloudflare build
 
+      - name: Inject KV binding
+        run: node -e "const f=require('fs');const c=JSON.parse(f.readFileSync('wrangler.jsonc','utf8'));c.kv_namespaces=[{binding:'YIMA_LEADS',id:'79c7a651e94d42bd88cc125be8940373'}];f.writeFileSync('wrangler.jsonc',JSON.stringify(c,null,'\t'))"
+
       - name: Deploy
         run: npx wrangler deploy
         env:

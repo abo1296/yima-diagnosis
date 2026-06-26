@@ -5,18 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>逸马诊断 - 线索管理</title>
 <style>
-  * { margin:0;padding:0;box-sizing:border-box }
-  body { background:#0a0a0f;color:#e0e0e0;font-family:Arial,Helvetica,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center }
-  .wrap { max-width:400px;width:100%;padding:24px }
-  h1 { font-size:20px;margin-bottom:16px;text-align:center }
-  input { width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#e0e0e0;font-size:14px;margin-bottom:12px;outline:none }
-  button { width:100%;padding:12px;border-radius:12px;background:#c0392b;color:white;font-size:14px;font-weight:600;border:none;cursor:pointer }
-  button:active { opacity:0.8 }
-  .info { padding:16px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);margin-top:16px }
-  .info p { font-size:13px;color:#888;margin-bottom:8px }
-  .info code { font-size:12px;display:block;padding:12px;border-radius:8px;background:rgba(255,255,255,0.04);color:#d4a853;word-break:break-all }
-  .back { font-size:12px;color:#666;text-align:center;margin-top:16px }
-  .back a { color:#c0392b;text-decoration:none }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0a0a0f;color:#e0e0e0;font-family:Arial,Helvetica,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center}
+  .wrap{max-width:600px;width:100%;padding:24px}
+  h1{font-size:20px;margin-bottom:16px;text-align:center}
+  input{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#e0e0e0;font-size:14px;margin-bottom:12px;outline:none}
+  button{width:100%;padding:12px;border-radius:12px;background:#c0392b;color:white;font-size:14px;font-weight:600;border:none;cursor:pointer}
+  button:active{opacity:0.8}
+  .leads{margin-top:20px}
+  .lead-card{padding:14px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);margin-bottom:10px}
+  .lead-card .phone{font-size:16px;font-weight:700;color:#fff}
+  .lead-card .meta{font-size:12px;color:#888;margin-top:4px}
+  .lead-card .time{font-size:11px;color:#666;margin-top:2px}
+  .refresh{font-size:12px;color:#c0392b;cursor:pointer;text-decoration:none;float:right;margin-bottom:12px}
+  .empty{text-align:center;color:#666;padding:40px 0;font-size:14px}
+  .back{font-size:12px;color:#666;text-align:center;margin-top:16px}
+  .back a{color:#c0392b;text-decoration:none}
+  .loading{text-align:center;color:#888;padding:20px}
+  .stats{font-size:12px;color:#888;margin-bottom:12px}
 </style>
 </head>
 <body>
@@ -27,12 +33,9 @@
 </div>
 <div class="wrap" id="panel" style="display:none">
   <h1>咨询线索</h1>
-  <div class="info">
-    <p>查看方式：Cloudflare 控制台 → Workers & Pages → yima-diagnosis → Logs</p>
-    <p>搜索 <code style="display:inline;padding:2px 6px;background:rgba(255,255,255,0.06)">[LEAD]</code> 即可查看所有线索</p>
-    <p style="margin-top:12px">每条日志格式：</p>
-    <code>[LEAD] 手机号 行业 门店数 得分 等级</code>
-  </div>
+  <a class="refresh" href="javascript:loadLeads()">刷新</a>
+  <div class="stats" id="stats"></div>
+  <div class="leads" id="leads"><div class="loading">加载中...</div></div>
   <p class="back"><a href="/">← 返回首页</a></p>
 </div>
 <script>
@@ -41,12 +44,44 @@ function doLogin(){
     document.getElementById('login').style.display='none';
     document.getElementById('panel').style.display='block';
     sessionStorage.setItem('admin_auth','1');
+    loadLeads();
+  }
+}
+async function loadLeads(){
+  document.getElementById('leads').innerHTML='<div class="loading">加载中...</div>';
+  try{
+    const resp=await fetch('/api/leads',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'list',phone:'_admin_'})
+    });
+    const data=await resp.json();
+    if(data.error){
+      document.getElementById('leads').innerHTML='<div class="empty">存储未配置——查看 Cloudflare 后台 Logs 搜 [LEAD]</div>';
+      return;
+    }
+    const leads=data.leads||[];
+    document.getElementById('stats').textContent=`共 ${leads.length} 条记录`;
+    if(leads.length===0){
+      document.getElementById('leads').innerHTML='<div class="empty">暂无线索，等待用户提交</div>';
+      return;
+    }
+    document.getElementById('leads').innerHTML=leads.map(l=>`
+      <div class="lead-card">
+        <div class="phone">📞 ${l.phone}</div>
+        <div class="meta">${l.industry||'-'} · ${l.storeCount||'-'} · ${l.score||'-'}分 · ${l.level||'-'}</div>
+        <div class="time">${new Date(l.time).toLocaleString('zh-CN')}</div>
+      </div>
+    `).join('');
+  }catch(e){
+    document.getElementById('leads').innerHTML='<div class="empty">加载失败：无法连接到服务器</div>';
   }
 }
 (function(){
   if(sessionStorage.getItem('admin_auth')==='1'){
     document.getElementById('login').style.display='none';
     document.getElementById('panel').style.display='block';
+    loadLeads();
   }
 })();
 </script>
