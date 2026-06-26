@@ -88,188 +88,218 @@ export default function Page() {
   return <SurveyFlow answers={answers} saveAnswers={saveAnswers} step={surveyStep} setStep={setSurveyStep} onComplete={(sc) => { setScores(sc); setPhase("result"); localStorage.removeItem(STORAGE_KEY); }} />;
 }
 
-// ===== Welcome (Full Landing Page) =====
+// ===== Welcome (Full Landing Page Pro) =====
 function Welcome({ onStart }: { onStart: () => void }) {
-  const scrollRef = useRef<HTMLElement>(null);
-  const [scrolled, setScrolled] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [trustNums, setTrustNums] = useState([0,0,0,0]);
+  const [reportBars, setReportBars] = useState(false);
+  const heroCardRef = useRef<HTMLDivElement>(null);
+  const reportRef = useRef<HTMLDivElement>(null);
+  const trustRef = useRef<HTMLDivElement>(null);
 
-  // Particle system
+  // Network canvas
   useEffect(() => {
-    const canvas = document.getElementById("particles") as HTMLCanvasElement;
+    const canvas = document.getElementById("bgCanvas") as HTMLCanvasElement;
     if (!canvas) return;
     const ctx = canvas.getContext("2d")!;
-    let animId: number;
-    const particles: { x: number; y: number; size: number; speed: number; opacity: number; drift: number }[] = [];
+    let animId: number, mouseX = -200, mouseY = -200;
+    const nodes: { x:number; y:number; vx:number; vy:number; r:number }[] = [];
     const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
     resize(); window.addEventListener("resize", resize);
-    for (let i = 0; i < 60; i++) particles.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, size: Math.random() * 1.5 + 0.5, speed: Math.random() * 0.3 + 0.08, opacity: Math.random() * 0.4 + 0.1, drift: Math.random() * 0.2 - 0.1 });
+    for (let i = 0; i < 50; i++) nodes.push({ x:Math.random()*canvas.width, y:Math.random()*canvas.height, vx:(Math.random()-.5)*0.3, vy:(Math.random()-.5)*0.3, r:Math.random()*2+1 });
+    const onMove = (e:MouseEvent) => { mouseX = e.clientX; mouseY = e.clientY; };
+    window.addEventListener("mousemove", onMove);
     const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 100) { ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(particles[j].x, particles[j].y); ctx.strokeStyle = `rgba(59,130,246,${0.05 * (1 - dist / 100)})`; ctx.lineWidth = 0.5; ctx.stroke(); }
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      for (let i=0; i<nodes.length; i++) {
+        for (let j=i+1; j<nodes.length; j++) {
+          const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y, dist=Math.sqrt(dx*dx+dy*dy);
+          if (dist<140) { ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y); ctx.strokeStyle=`rgba(59,130,246,${0.08*(1-dist/140)})`; ctx.lineWidth=0.5; ctx.stroke(); }
         }
       }
-      particles.forEach(p => { p.y += p.speed; p.x += p.drift; if (p.y > canvas.height + 10) { p.y = -10; p.x = Math.random() * canvas.width; } ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fillStyle = `rgba(96,165,250,${p.opacity})`; ctx.fill(); });
+      nodes.forEach(n => {
+        n.x+=n.vx; n.y+=n.vy;
+        if (n.x<0) n.x=canvas.width; if (n.x>canvas.width) n.x=0;
+        if (n.y<0) n.y=canvas.height; if (n.y>canvas.height) n.y=0;
+        const dx=n.x-mouseX, dy=n.y-mouseY, dist=Math.sqrt(dx*dx+dy*dy);
+        if (dist<200) { n.x+=dx/dist*0.6; n.y+=dy/dist*0.6; }
+        ctx.beginPath(); ctx.arc(n.x,n.y,n.r,0,Math.PI*2); ctx.fillStyle="rgba(96,165,250,0.5)"; ctx.fill();
+      });
       animId = requestAnimationFrame(animate);
     };
     animate();
-    return () => { cancelAnimationFrame(animId); window.removeEventListener("resize", resize); };
+    return () => { cancelAnimationFrame(animId); window.removeEventListener("resize", resize); window.removeEventListener("mousemove", onMove); };
   }, []);
 
-  // Navbar scroll
+  // Custom cursor
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    const dot = document.createElement("div"); dot.className = "cursor-dot"; document.body.appendChild(dot);
+    const ring = document.createElement("div"); ring.className = "cursor-ring"; document.body.appendChild(ring);
+    const onMove = (e:MouseEvent) => { dot.style.left = e.clientX+"px"; dot.style.top = e.clientY+"px"; ring.style.left = e.clientX+"px"; ring.style.top = e.clientY+"px"; };
+    window.addEventListener("mousemove", onMove);
+    const hoverEls = document.querySelectorAll("a,button,.hero-3d-card,.card-mini,.magnetic-card,.report-card,.report-feat,.client-tile,.faq-item,.model-tag,.trust-card");
+    const onEnter = () => ring.classList.add("hover");
+    const onLeave = () => ring.classList.remove("hover");
+    hoverEls.forEach(el => { el.addEventListener("mouseenter", onEnter); el.addEventListener("mouseleave", onLeave); });
+    return () => { dot.remove(); ring.remove(); window.removeEventListener("mousemove", onMove); };
   }, []);
 
-  // Scroll reveal
+  // 3D tilt card
+  const handleTilt = (e: React.MouseEvent) => {
+    if (!heroCardRef.current) return;
+    const rect = heroCardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left - rect.width/2;
+    const y = e.clientY - rect.top - rect.height/2;
+    heroCardRef.current.style.transform = `rotateY(${x*0.02}deg) rotateX(${-y*0.02}deg) translateZ(10px)`;
+  };
+  const resetTilt = () => { if (heroCardRef.current) heroCardRef.current.style.transform = "rotateY(0) rotateX(0) translateZ(0)"; };
+
+  // Counter + bar animations on scroll
   useEffect(() => {
-    const obs = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("on"); }); }, { threshold: 0.1 });
-    document.querySelectorAll(".reveal").forEach(el => obs.observe(el));
-    return () => obs.disconnect();
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        if (e.target === trustRef.current) {
+          [22,3000,195,200].forEach((target, i) => {
+            const start = performance.now();
+            const anim = (now: number) => {
+              const p = Math.min((now-start)/2000, 1);
+              const v = Math.round(target * (1-Math.pow(1-p,3)));
+              setTrustNums(prev => { const n = [...prev]; n[i] = v; return n; });
+              if (p<1) requestAnimationFrame(anim);
+            };
+            requestAnimationFrame(anim);
+          });
+        }
+        if (e.target === reportRef.current) setReportBars(true);
+      });
+    }, { threshold: 0.3 });
+    if (trustRef.current) obs.observe(trustRef.current);
+    if (reportRef.current) obs.observe(reportRef.current);
+
+    // Scroll reveal
+    const revealObs = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("on"); }); }, { threshold: 0.1 });
+    document.querySelectorAll(".reveal").forEach(el => revealObs.observe(el));
+    return () => { obs.disconnect(); revealObs.disconnect(); };
   }, []);
 
   return (
     <>
-      <canvas id="particles" />
-      <div className="glow-orb glow-1" /><div className="glow-orb glow-2" />
+      <canvas id="bgCanvas" />
 
-      {/* NAVBAR */}
-      <nav className={`landing-nav${scrolled ? " scrolled" : ""}`}>
+      {/* NAV */}
+      <nav className="landing-nav">
         <div className="nav-brand">
-          <img src="/logo.png" alt="逸马" className="logo-box" style={{width:34,height:34,borderRadius:10,objectFit:"cover"}} />
-          <span>逸马诊断</span>
+          <img src="/logo.png" alt="逸马" className="logo-img" />
+          逸马诊断
         </div>
         <ul className="nav-links">
-          <li><a href="#how">诊断流程</a></li>
-          <li><a href="#model">9维模型</a></li>
-          <li><a href="#report">样本报告</a></li>
-          <li><a href="#clients">服务客户</a></li>
-          <li><a href="#faq">FAQ</a></li>
+          <li><a href="#how">诊断流程</a></li><li><a href="#model">9维模型</a></li><li><a href="#report">样本报告</a></li><li><a href="#clients">服务客户</a></li><li><a href="#faq">FAQ</a></li>
         </ul>
         <button onClick={onStart} className="nav-cta">开始诊断</button>
       </nav>
 
       {/* HERO */}
-      <section className="hero-section" ref={scrollRef}>
+      <section className="hero-section">
         <div className="hero-grid">
-          <div>
-            <div className="hero-badge"><span className="dot-ring" /> 22年方法论 · AI驱动诊断</div>
-            <h1 className="hero">你的连锁<br />在<span className="highlight">什么段位</span>？</h1>
+          <div className="reveal">
+            <div className="hero-tag"><span className="pulse-dot" /> 22年方法论 · 智能化诊断</div>
+            <h1>你的连锁<br />在<span className="grad">什么段位</span>？</h1>
             <p className="hero-sub">基于22年连锁咨询数据训练的智能诊断引擎。<br />9大维度 × 72项指标，15分钟精准定位企业成熟度。</p>
             <div className="hero-actions">
-              <button onClick={onStart} className="btn-primary">→ 开始免费诊断</button>
-              <a href="/share?score=78&level=成熟型" className="btn-secondary">查看样本报告</a>
-            </div>
-            <div className="hero-stats">
-              <div><div className="hero-stat-val">3,286<span> 家</span></div><div className="hero-stat-lbl">已完成诊断</div></div>
-              <div><div className="hero-stat-val">78<span> 分</span></div><div className="hero-stat-lbl">企业平均分</div></div>
-              <div><div className="hero-stat-val">94<span>%</span></div><div className="hero-stat-lbl">报告满意度</div></div>
+              <button onClick={onStart} className="btn-main">→ 开始免费诊断</button>
+              <a href="/share?score=78&level=成熟型" className="btn-ghost">查看样本报告</a>
             </div>
           </div>
-          {/* Dashboard preview */}
-          <div className="hero-dash-card">
-            <div className="dash-header">
-              <div className="dash-dots"><span className="dash-dot r" /><span className="dash-dot y" /><span className="dash-dot g" /></div>
-              <div className="dash-tag">LIVE</div>
-            </div>
-            <div className="dash-score-row">
-              <div className="dash-big-num">78<span className="unit">/100</span></div>
-              <div className="dash-level"><b>成熟型</b><br />超过 68% 同行</div>
-            </div>
-            <div className="dash-grid">
-              <div className="dash-mini"><div className="dash-mini-label">战略定位</div><div className="dash-mini-val" style={{color:"#10B981"}}>85</div><div className="dash-mini-bar"><div className="dash-mini-fill green" style={{width:"85%"}} /></div></div>
-              <div className="dash-mini"><div className="dash-mini-label">运营标准</div><div className="dash-mini-val" style={{color:"#60A5FA"}}>72</div><div className="dash-mini-bar"><div className="dash-mini-fill blue" style={{width:"72%"}} /></div></div>
-              <div className="dash-mini"><div className="dash-mini-label">数字化</div><div className="dash-mini-val" style={{color:"#F59E0B"}}>45</div><div className="dash-mini-bar"><div className="dash-mini-fill cyan" style={{width:"45%"}} /></div></div>
-              <div className="dash-mini"><div className="dash-mini-label">人才体系</div><div className="dash-mini-val" style={{color:"#818CF8"}}>60</div><div className="dash-mini-bar"><div className="dash-mini-fill blue" style={{width:"60%"}} /></div></div>
+          <div className="hero-card-wrap reveal">
+            <div className="hero-3d-card" ref={heroCardRef} onMouseMove={handleTilt} onMouseLeave={resetTilt}>
+              <div className="card-dots"><span className="card-dot r" /><span className="card-dot y" /><span className="card-dot g" /></div>
+              <div className="card-badge">LIVE DIAGNOSTIC</div>
+              <div className="card-score-row">
+                <div className="card-big-num">78<span className="unit">/100</span></div>
+                <div className="card-level"><b>成熟型</b><br />超过 68% 同行</div>
+              </div>
+              <div className="card-grid">
+                {[{l:"战略定位",v:"85",c:"#10B981"},{l:"运营标准",v:"72",c:"#60A5FA"},{l:"数字化",v:"45",c:"#F59E0B"},{l:"人才体系",v:"60",c:"#818CF8"}].map(d => (
+                  <div key={d.l} className="card-mini"><div className="label">{d.l}</div><div className="val" style={{color:d.c}}>{d.v}</div><div className="bar"><div className="fill" style={{width:d.v+"%",background:d.c}} /></div></div>
+                ))}
+              </div>
+              <div className="card-footer-row"><span>DIAGNOSTIC REPORT v2.4</span><span>即时分析中…</span></div>
             </div>
           </div>
         </div>
       </section>
 
       {/* TRUST BAR */}
-      <section className="trust-bar">
-        <div className="trust-track">
-          {[["22 年","连锁咨询深耕"],["3,000+","会员企业"],["195 家","已上市"],["200+","高校教材覆盖"],["72 项","诊断指标"]].map(([n, l]) => (
-            <div key={l} className="trust-item"><div className="trust-num">{n.split(" ")[0]}<span className="unit">{n.includes(" ") ? " " + n.split(" ")[1] : ""}</span></div><div className="trust-label">{l}</div></div>
+      <section className="trust-section" ref={trustRef}>
+        <div className="trust-row">
+          {[["22"," 年","连锁咨询深耕"],["3000","+","会员企业"],["195"," 家","已上市"],["200","+","高校教材覆盖"]].map(([n,u,l],i) => (
+            <div key={l} className="trust-card"><div className="trust-num">{trustNums[i]}<span className="unit">{u}</span></div><div className="trust-label">{l}</div></div>
           ))}
+          <div className="trust-card"><div className="trust-num">72<span className="unit"> 项</span></div><div className="trust-label">诊断指标</div></div>
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
+      {/* STEPS */}
       <section className="landing-section" id="how">
         <div className="landing-section-inner">
-          <div className="section-label">诊断流程</div>
-          <h2 className="section-title">三步完成诊断，即时出报告</h2>
-          <p className="section-sub">无需注册，AI 引擎自动分析，15-20分钟获得专业级连锁成熟度评估</p>
+          <div className="section-label reveal">诊断流程</div>
+          <h2 className="section-title reveal">三步完成诊断，即时出报告</h2>
+          <p className="section-sub reveal">无需注册，AI 引擎自动分析，15-20分钟获得专业级连锁成熟度评估</p>
           <div className="steps-grid">
-            {[{ n:"01", i:"📝", t:"填写诊断问卷", d:"72道专业题目，覆盖连锁经营全部关键维度。答题进度实时保存，支持中途退出续答。" },
-              { n:"02", i:"🧠", t:"AI智能分析", d:"基于22年行业数据训练的算法引擎，自动生成9维雷达图、成熟度评分和同业对比。" },
-              { n:"03", i:"📄", t:"获取诊断报告", d:"一键下载PDF报告，含改进路线图与优先级矩阵。适合10-500家门店的连锁企业。" }].map((s) => (
-              <div key={s.n} className="step-card reveal">
-                <div className="step-num">{s.n}</div>
-                <div className="step-icon">{s.i}</div>
-                <h3>{s.t}</h3>
-                <p>{s.d}</p>
-              </div>
+            {[{n:"01",i:"📝",t:"填写诊断问卷",d:"72道专业题目，覆盖连锁经营全部关键维度。答题进度实时保存，支持中途退出续答。"},{n:"02",i:"🧠",t:"AI智能分析",d:"基于22年行业数据训练的算法引擎，自动生成9维雷达图、成熟度评分和同业对比。"},{n:"03",i:"📄",t:"获取诊断报告",d:"一键下载PDF报告，含改进路线图与优先级矩阵。适合10-500家门店的连锁企业。"}].map(s => (
+              <div key={s.n} className="magnetic-card reveal"><div className="step-num">{s.n}</div><div className="step-icon">{s.i}</div><h3>{s.t}</h3><p>{s.d}</p></div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* 9 DIMENSIONS */}
+      {/* MODEL */}
       <section className="landing-section alt" id="model">
         <div className="landing-section-inner">
-          <div className="section-label">诊断模型</div>
-          <h2 className="section-title">9维度连锁成熟度模型</h2>
-          <p className="section-sub">从战略顶层到执行细节，系统化诊断企业核心竞争力</p>
+          <div className="section-label reveal">诊断模型</div>
+          <h2 className="section-title reveal">9维度连锁成熟度模型</h2>
+          <p className="section-sub reveal">从战略顶层到执行细节，系统化诊断企业核心竞争力</p>
           <div className="model-grid">
             <div className="model-tags reveal">
-              {DIMENSION_ORDER.map((d, i) => <span key={d} className={`model-tag${i===0?" active":""}`} title={DIMENSION_TIPS[d]}>{i===0?"🎯 ":i===1?"💰 ":i===2?"📋 ":i===3?"👥 ":i===4?"🔗 ":i===5?"📚 ":i===6?"✅ ":i===7?"💻 ":"🏛 "}{DIMENSION_LABELS[d]}</span>)}
+              {DIMENSION_ORDER.map((d,i) => <span key={d} className={`model-tag${i===0?" active":""}`} title={DIMENSION_TIPS[d]}>{["🎯","💰","📋","👥","🔗","📚","✅","💻","🏛"][i]} {DIMENSION_LABELS[d]}</span>)}
             </div>
             <div className="reveal" style={{display:"flex",justifyContent:"center"}}>
-              <svg viewBox="0 0 200 200" width="100%" style={{maxWidth:340}}>
+              <svg viewBox="0 0 220 220" width="100%" style={{maxWidth:360}}>
                 <defs>
-                  <linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.25"/>
-                    <stop offset="100%" stopColor="#06B6D4" stopOpacity="0.08"/>
-                  </linearGradient>
+                  <radialGradient id="rg2" cx="50%" cy="50%"><stop offset="0%" stopColor="#3B82F6" stopOpacity="0.08"/><stop offset="100%" stopColor="transparent"/></radialGradient>
+                  <linearGradient id="rf2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#3B82F6" stopOpacity="0.3"/><stop offset="100%" stopColor="#06B6D4" stopOpacity="0.1"/></linearGradient>
                 </defs>
-                {[20,40,60,80].map(r => <circle key={r} cx="100" cy="100" r={r} fill="none" stroke="rgba(59,130,246,0.06)" strokeWidth="0.5"/>)}
-                <line x1="100" y1="20" x2="100" y2="180" stroke="rgba(59,130,246,0.04)" strokeWidth="0.5"/>
-                <line x1="20" y1="100" x2="180" y2="100" stroke="rgba(59,130,246,0.04)" strokeWidth="0.5"/>
-                <polygon points="100,28 152,52 175,100 158,152 100,170 42,152 25,100 48,52" fill="url(#rg)" stroke="#3B82F6" strokeWidth="1.5"/>
-                {[[100,28],[152,52],[175,100],[158,152],[100,170],[42,152],[25,100],[48,52]].map(([cx,cy]) => <circle key={`${cx},${cy}`} cx={cx} cy={cy} r="3" fill="#60A5FA"/>)}
+                <circle cx="110" cy="110" r="100" fill="url(#rg2)"/>
+                {[25,45,65,85].map(r => <circle key={r} cx="110" cy="110" r={r} fill="none" stroke="rgba(59,130,246,0.06)" strokeWidth="0.5"/>)}
+                <line x1="110" y1="10" x2="110" y2="210" stroke="rgba(59,130,246,0.04)" strokeWidth="0.5"/>
+                <line x1="10" y1="110" x2="210" y2="110" stroke="rgba(59,130,246,0.04)" strokeWidth="0.5"/>
+                <line x1="39" y1="39" x2="181" y2="181" stroke="rgba(59,130,246,0.04)" strokeWidth="0.5"/>
+                <line x1="39" y1="181" x2="181" y2="39" stroke="rgba(59,130,246,0.04)" strokeWidth="0.5"/>
+                <polygon points="110,25 157,48 185,110 165,172 110,195 55,172 35,110 63,48" fill="url(#rf2)" stroke="#3B82F6" strokeWidth="1.5"/>
+                {[[110,25],[157,48],[185,110],[165,172],[110,195],[55,172],[35,110],[63,48]].map(([cx,cy]) => <circle key={`${cx},${cy}`} cx={cx} cy={cy} r="3.5" fill="#60A5FA"/>)}
               </svg>
             </div>
           </div>
         </div>
       </section>
 
-      {/* SAMPLE REPORT */}
+      {/* REPORT */}
       <section className="landing-section" id="report">
-        <div className="landing-section-inner">
-          <div className="section-label">诊断产出</div>
-          <h2 className="section-title">你的专属连锁诊断报告</h2>
-          <p className="section-sub">不止一个分数 —— 你会获得完整的改进地图和行业对标分析</p>
+        <div className="landing-section-inner" ref={reportRef}>
+          <div className="section-label reveal">诊断产出</div>
+          <h2 className="section-title reveal">你的专属连锁诊断报告</h2>
+          <p className="section-sub reveal">不止一个分数 —— 你会获得完整的改进地图和行业对标分析</p>
           <div className="report-grid">
             <div className="report-card reveal">
-              <div className="report-card-top">
-                <div className="dash-dots"><span className="dash-dot r" /><span className="dash-dot y" /><span className="dash-dot g" /></div>
-                <span style={{fontSize:10,color:"var(--text-muted)"}}>DIAGNOSTIC REPORT</span>
-              </div>
+              <div className="report-card-top"><div className="card-dots"><span className="card-dot r" /><span className="card-dot y" /><span className="card-dot g" /></div><span style={{fontSize:10,color:"var(--text-muted)"}}>DIAGNOSTIC REPORT</span></div>
               <div className="report-card-body">
                 <div style={{fontSize:10,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:1}}>成熟度总分</div>
-                <div className="report-score">78<span style={{fontSize:18,color:"var(--text-muted)"}}> /100</span></div>
-                <div style={{fontSize:11,color:"var(--text-muted)"}}>成熟型 · 超过 68% 同规模企业</div>
+                <div className="report-score">78<span style={{fontSize:18,color:"var(--text-muted)"}}>/100</span></div>
+                <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:4}}>成熟型 · 超过 68% 同规模企业</div>
                 <div className="report-bar-list">
-                  {[["战略",85,"h"],["运营",72,"h"],["人才",60,"m"],["数字化",45,"m"],["供应链",78,"h"]].map(([n,v,c]) => (
-                    <div key={n as string} className="report-bar-row"><span className="report-bar-name">{n}</span><div className="report-bar-track"><div className={`report-bar-fill ${c}`} style={{width:`${v}%`}} /></div><span className="report-bar-val">{v}</span></div>
+                  {[["战略","85"],["运营","72"],["人才","60"],["数字化","45"],["供应链","78"]].map(([n,v]) => (
+                    <div key={n} className="report-bar-row"><span className="report-bar-name">{n}</span><div className="report-bar-track"><div className="report-bar-fill" style={{width:reportBars?`${v}%`:"0"}} /></div><span className="report-bar-val">{v}</span></div>
                   ))}
                 </div>
               </div>
@@ -277,7 +307,7 @@ function Welcome({ onStart }: { onStart: () => void }) {
             <div className="report-features reveal">
               <h4>每份报告包含</h4>
               {["9维度成熟度雷达图 + 同业对比","改进优先级矩阵（紧急/重要）","分阶段升级路线图（0→6→12月）","关键短板与风险预警","行业标杆数据对标","逸马专家深度解读"].map((f,i) => (
-                <div key={i} className="report-feat"><span style={{color:"var(--accent)",fontWeight:700,flexShrink:0}}>◆</span> {f}</div>
+                <div key={i} className="report-feat"><span className="feat-icon">◆</span> {f}</div>
               ))}
             </div>
           </div>
@@ -287,14 +317,14 @@ function Welcome({ onStart }: { onStart: () => void }) {
       {/* CLIENTS */}
       <section className="landing-section alt" id="clients">
         <div className="landing-section-inner">
-          <div className="section-label">服务客户</div>
-          <h2 className="section-title">行业头部企业的共同选择</h2>
+          <div className="section-label reveal">服务客户</div>
+          <h2 className="section-title reveal">行业头部企业的共同选择</h2>
           <div className="client-row reveal">
             {["百果园","锅圈食汇","木屋烧烤","苏宁","良品铺子","周黑鸭"].map(c => <span key={c} className="client-tile">{c}</span>)}
           </div>
           <div className="client-stats reveal">
             {[["3,000+","会员企业"],["195家","已上市"],["200+","高校教材覆盖"],["25本","连锁专著"]].map(([n,l]) => (
-              <div key={l} className="client-stat"><div className="client-stat-num">{n}</div><div className="client-stat-lbl">{l}</div></div>
+              <div key={l} style={{textAlign:"center"}}><div className="client-stat-num">{n}</div><div className="client-stat-lbl">{l}</div></div>
             ))}
           </div>
         </div>
@@ -303,19 +333,19 @@ function Welcome({ onStart }: { onStart: () => void }) {
       {/* FAQ */}
       <section className="landing-section" id="faq">
         <div className="landing-section-inner">
-          <div className="section-label">常见问题</div>
-          <h2 className="section-title">快速解答</h2>
+          <div className="section-label reveal">常见问题</div>
+          <h2 className="section-title reveal">快速解答</h2>
           <div className="faq-grid">
             {[
-              { q:"真的完全免费吗？", a:"完全免费。诊断是我们22年方法论的产品化展示，通过深度咨询项目盈利，诊断环节不收取任何费用。" },
-              { q:"答题数据安全吗？", a:"数据加密传输，仅用于生成你的诊断报告，绝不会分享给任何第三方。" },
-              { q:"适合什么规模的企业？", a:"10-500家门店的连锁企业最具诊断价值。单店或超大型集团参考意义有限。" },
-              { q:"报告多久能出来？", a:"提交问卷后即时生成，PDF报告可直接下载保存，也可在线查看。" },
-              { q:"可以重复测试吗？", a:"建议每6个月复诊一次，追踪成熟度变化趋势，量化改进行动效果。" },
-              { q:"逸马为什么做免费诊断？", a:"让更多连锁企业体验22年方法论的价值，建立信任后再探讨深度合作可能。" },
-            ].map((faq, i) => (
-              <div key={i} className={`faq-item${openFaq===i?" open":""}`} onClick={() => setOpenFaq(openFaq===i?null:i)}>
-                <div className="faq-q">{faq.q}<span className="toggle">+</span></div>
+              {q:"真的完全免费吗？",a:"完全免费。诊断是我们22年方法论的产品化展示，通过深度咨询项目盈利，诊断环节不收取任何费用。"},
+              {q:"答题数据安全吗？",a:"数据加密传输，仅用于生成你的诊断报告，绝不会分享给任何第三方。"},
+              {q:"适合什么规模的企业？",a:"10-500家门店的连锁企业最具诊断价值。单店或超大型集团参考意义有限。"},
+              {q:"报告多久能出来？",a:"提交问卷后即时生成，PDF报告可直接下载保存，也可在线查看。"},
+              {q:"可以重复测试吗？",a:"建议每6个月复诊一次，追踪成熟度变化趋势，量化改进行动效果。"},
+              {q:"逸马为什么做免费诊断？",a:"让更多连锁企业体验22年方法论的价值，建立信任后再探讨深度合作可能。"},
+            ].map((faq,i) => (
+              <div key={i} className={`faq-item reveal${openFaq===i?" open":""}`} onClick={() => setOpenFaq(openFaq===i?null:i)}>
+                <div className="faq-q">{faq.q}<span className="faq-toggle">+</span></div>
                 <div className="faq-a">{faq.a}</div>
               </div>
             ))}
@@ -323,33 +353,24 @@ function Welcome({ onStart }: { onStart: () => void }) {
         </div>
       </section>
 
-      {/* CTA BANNER */}
+      {/* CTA */}
       <section className="cta-banner-section">
-        <h2>你的连锁能打几分？</h2>
-        <p className="cta-sub">3,286家企业已获得清晰诊断报告，现在轮到你了</p>
-        <button onClick={onStart} className="btn-primary">→ 开始免费诊断</button>
+        <h2 className="reveal">你的连锁能打几分？</h2>
+        <p className="reveal" style={{color:"var(--text-secondary)",marginBottom:28,fontSize:15}}>3,286家企业已获得清晰诊断报告，现在轮到你了</p>
+        <button onClick={onStart} className="btn-main reveal">→ 开始免费诊断</button>
       </section>
 
       {/* FOOTER */}
       <footer className="landing-footer">
-        <div className="footer-brand">
-          <img src="/logo.png" alt="逸马" className="f-logo" style={{width:32,height:32,borderRadius:8,objectFit:"cover"}} />
-          <h4 style={{fontSize:14,fontWeight:700,marginBottom:4}}>逸马连锁成熟度诊断</h4>
+        <div className="reveal">
+          <img src="/logo.png" alt="逸马" className="f-logo" />
+          <h4 style={{fontSize:15,fontWeight:700,marginBottom:6}}>逸马连锁成熟度诊断</h4>
           <p>基于22年连锁咨询方法论<br />9维度全面评估体系成熟度<br />手机浏览器打开 yima777.cn 随时测</p>
         </div>
-        <div>
-          <h5>快速导航</h5>
-          <a href="#how">诊断流程</a><a href="#model">9维模型</a><a href="#report">样本报告</a><a href="#faq">常见问题</a>
-        </div>
-        <div>
-          <h5>关于逸马</h5>
-          <a href="#">逸马官网</a><a href="#">连锁专著</a><a href="#">咨询合作</a>
-        </div>
+        <div className="reveal"><h5>快速导航</h5><a href="#how">诊断流程</a><a href="#model">9维模型</a><a href="#report">样本报告</a><a href="#faq">常见问题</a></div>
+        <div className="reveal"><h5>关于逸马</h5><a href="#">逸马官网</a><a href="#">连锁专著</a><a href="#">咨询合作</a><a href="#">隐私政策</a></div>
       </footer>
-      <div className="footer-bar">
-        <span>© 2026 逸马诊断 yima777.cn</span>
-        <span>方法论进入 200+ 高校教材 · 25本连锁专著 · 国家版权课程</span>
-      </div>
+      <div className="f-bar"><span>© 2026 逸马诊断 yima777.cn</span><span>方法论进入 200+ 高校教材 · 25本连锁专著 · 国家版权课程</span></div>
     </>
   );
 }
