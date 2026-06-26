@@ -966,12 +966,59 @@ export const industryQuestions: Record<string, Question[]> = {
   "家电": 家电,
 };
 
+// ========== 50 题精简版过滤集 ==========
+// 从72题裁到50题：通用30题 + 行业20题
+// 裁题原则：保留诊断价值最高的题（让报告仍能详细诊断），砍掉重叠/非关键题
+// 如需恢复到72题：删除这两个过滤集，恢复 getQuestionsForIndustry 旧逻辑即可
+
+const KEEP_GENERIC_IDS = new Set([
+  // strategy 8→5：裁边界取舍、差异化感知、市场变化响应（太抽象/与战略制定重叠）
+  "strategy_1","strategy_2","strategy_4","strategy_6","strategy_8",
+  // model 6→4：裁扩张模式选择、定价策略（战略题已覆盖/行业题更具体）
+  "model_1","model_3","model_5","model_6",
+  // organization 8→6：裁离职率、职业发展（店长供给+考核+扩张储备更关键）
+  "organization_1","organization_2","organization_3","organization_5","organization_7","organization_8",
+  // training 5→4：裁更新频率（教材+效果检验+传帮带已覆盖）
+  "training_1","training_3","training_4","training_5",
+  // supervision 5→4：裁结果落地（检查标准+执行力+反馈机制已覆盖）
+  "supervision_1","supervision_2","supervision_4","supervision_5",
+  // culture 8→7：裁工作氛围（价值观+融入+建议渠道+仪式感已覆盖）
+  "culture_1","culture_2","culture_3","culture_4","culture_5","culture_6","culture_8",
+  // 以下为无行业选择时的默认行业题（与 KEEP_INDUSTRY_IDS 一致）
+  "operation_1","operation_2","operation_3","operation_4","operation_7",
+  "supply_chain_1","supply_chain_2","supply_chain_3","supply_chain_4","supply_chain_6",
+  "digital_1","digital_2","digital_3","digital_4","digital_7",
+  "model_7","model_8",
+  "training_6","training_8",
+  "supervision_6",
+]);
+
+const KEEP_INDUSTRY_IDS = new Set([
+  // operation 8→5：裁产品结构管理、空间标准化、持续优化
+  "operation_1","operation_2","operation_3","operation_4","operation_7",
+  // supply_chain 8→5：裁成本优势、新城市扩展、数字化
+  "supply_chain_1","supply_chain_2","supply_chain_3","supply_chain_4","supply_chain_6",
+  // digital 8→5：裁投入力度、线上占比、行业自评
+  "digital_1","digital_2","digital_3","digital_4","digital_7",
+  // model 2→2：保留（单店模型+回本周期行业版最关键）
+  "model_7","model_8",
+  // training 3→2：裁教材形式（上岗+认证更关键）
+  "training_6","training_8",
+  // supervision 3→1：裁神秘顾客、品质信心（巡店重点最核心）
+  "supervision_6",
+]);
+
 // ========== 获取某行业的完整题库 ==========
 export function getQuestionsForIndustry(industry?: string): Question[] {
   const overrides = industry ? industryQuestions[industry] : [];
-  if (overrides.length === 0) return genericQuestions;
+  if (overrides.length === 0) {
+    return genericQuestions.filter(q => KEEP_GENERIC_IDS.has(q.id));
+  }
   const overrideIds = new Set(overrides.map(q => q.id));
-  return [...genericQuestions.filter(q => !overrideIds.has(q.id)), ...overrides];
+  return [
+    ...genericQuestions.filter(q => !overrideIds.has(q.id) && KEEP_GENERIC_IDS.has(q.id)),
+    ...overrides.filter(q => KEEP_INDUSTRY_IDS.has(q.id)),
+  ];
 }
 
 // 默认导出通用题库（兼容旧代码）
