@@ -88,117 +88,269 @@ export default function Page() {
   return <SurveyFlow answers={answers} saveAnswers={saveAnswers} step={surveyStep} setStep={setSurveyStep} onComplete={(sc) => { setScores(sc); setPhase("result"); localStorage.removeItem(STORAGE_KEY); }} />;
 }
 
-// ===== Welcome =====
+// ===== Welcome (Full Landing Page) =====
 function Welcome({ onStart }: { onStart: () => void }) {
+  const scrollRef = useRef<HTMLElement>(null);
+  const [scrolled, setScrolled] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+
+  // Particle system
+  useEffect(() => {
+    const canvas = document.getElementById("particles") as HTMLCanvasElement;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d")!;
+    let animId: number;
+    const particles: { x: number; y: number; size: number; speed: number; opacity: number; drift: number }[] = [];
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    resize(); window.addEventListener("resize", resize);
+    for (let i = 0; i < 60; i++) particles.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, size: Math.random() * 1.5 + 0.5, speed: Math.random() * 0.3 + 0.08, opacity: Math.random() * 0.4 + 0.1, drift: Math.random() * 0.2 - 0.1 });
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 100) { ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(particles[j].x, particles[j].y); ctx.strokeStyle = `rgba(59,130,246,${0.05 * (1 - dist / 100)})`; ctx.lineWidth = 0.5; ctx.stroke(); }
+        }
+      }
+      particles.forEach(p => { p.y += p.speed; p.x += p.drift; if (p.y > canvas.height + 10) { p.y = -10; p.x = Math.random() * canvas.width; } ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fillStyle = `rgba(96,165,250,${p.opacity})`; ctx.fill(); });
+      animId = requestAnimationFrame(animate);
+    };
+    animate();
+    return () => { cancelAnimationFrame(animId); window.removeEventListener("resize", resize); };
+  }, []);
+
+  // Navbar scroll
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Scroll reveal
+  useEffect(() => {
+    const obs = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("on"); }); }, { threshold: 0.1 });
+    document.querySelectorAll(".reveal").forEach(el => obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-[100dvh] px-5 py-8" style={{ background: "var(--bg-primary)" }}>
-      <div className="max-w-md w-full text-center">
-        {/* Logo */}
-        <img src="/logo.png" alt="逸马" className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-2xl" style={{ boxShadow: "0 0 24px rgba(192,57,43,0.15)" }} />
+    <>
+      <canvas id="particles" />
+      <div className="glow-orb glow-1" /><div className="glow-orb glow-2" />
 
-        {/* Headline */}
-        <h1 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>你的连锁处于哪个阶段？</h1>
-        <p className="text-sm sm:text-base mb-2" style={{ color: "var(--text-secondary)" }}>开到第 30 家，还能像第 3 家一样吗？</p>
-        <p className="text-xs mb-5" style={{ color: "var(--text-muted)" }}>逸马 22 年方法论 · 覆盖 200 所高校教材 · 9 维度成熟度模型</p>
+      {/* NAVBAR */}
+      <nav className={`landing-nav${scrolled ? " scrolled" : ""}`}>
+        <div className="nav-brand">
+          <div className="logo-box">逸</div>
+          <span>逸马诊断</span>
+        </div>
+        <ul className="nav-links">
+          <li><a href="#how">诊断流程</a></li>
+          <li><a href="#model">9维模型</a></li>
+          <li><a href="#report">样本报告</a></li>
+          <li><a href="#clients">服务客户</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+        <button onClick={onStart} className="nav-cta">开始诊断</button>
+      </nav>
 
-        {/* How it works */}
-        <div className="grid grid-cols-3 gap-2 mb-5 text-xs">
-          {[{ step:"①", title:"填问卷", desc:"72题·15-20分钟" },
-            { step:"②", title:"出报告", desc:"9维雷达图+路线图" },
-            { step:"③", title:"免费领", desc:"PDF报告+深度咨询" }].map((s) => (
-            <div key={s.step} className="glass-card rounded-xl p-2.5" style={{ background: "rgba(255,255,255,0.03)" }}>
-              <div className="text-base mb-0.5" style={{ color: "var(--yima-red)" }}>{s.step}</div>
-              <div className="font-semibold text-[11px] mb-0.5" style={{ color: "var(--text-primary)" }}>{s.title}</div>
-              <div className="text-[10px]" style={{ color: "var(--text-muted)" }}>{s.desc}</div>
+      {/* HERO */}
+      <section className="hero-section" ref={scrollRef}>
+        <div className="hero-grid">
+          <div>
+            <div className="hero-badge"><span className="dot-ring" /> 22年方法论 · AI驱动诊断</div>
+            <h1 className="hero">你的连锁<br />在<span className="highlight">什么段位</span>？</h1>
+            <p className="hero-sub">基于22年连锁咨询数据训练的智能诊断引擎。<br />9大维度 × 72项指标，15分钟精准定位企业成熟度。</p>
+            <div className="hero-actions">
+              <button onClick={onStart} className="btn-primary">→ 开始免费诊断</button>
+              <a href="/share?score=78&level=成熟型" className="btn-secondary">查看样本报告</a>
             </div>
-          ))}
-        </div>
-
-        {/* Dimension tags with tooltips */}
-        <div className="flex flex-wrap justify-center gap-1.5 mb-5 text-[11px]" style={{ color: "var(--text-muted)" }}>
-          {DIMENSION_ORDER.map((d) => <span key={d} title={DIMENSION_TIPS[d] || ""} className="glass-card rounded-full px-2.5 py-0.5 cursor-default" style={{ background: "rgba(255,255,255,0.03)" }}>{DIMENSION_LABELS[d]}</span>)}
-        </div>
-
-        {/* Report preview mockup */}
-        <div className="mb-5 glass-card rounded-2xl p-3 text-left" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: "rgba(192,57,43,0.15)", color: "var(--yima-red)" }}>📊</div>
-            <span className="text-[11px] font-semibold" style={{ color: "var(--text-secondary)" }}>完成诊断后你将获得</span>
-          </div>
-          <div className="bg-[#08080d] rounded-xl p-3" style={{ border: "1px solid rgba(255,255,255,0.04)" }}>
-            {/* Mini radar chart */}
-            <svg viewBox="0 0 120 120" className="w-full" style={{ maxHeight: "120px" }}>
-              {[60,45,30,15].map((r, i) => {
-                const pts = [0,1,2,3,4,5,6,7,8].map(a => {
-                  const angle = (Math.PI * 2 / 9) * a - Math.PI / 2;
-                  return `${50 + r * Math.cos(angle)},${50 + r * Math.sin(angle)}`;
-                }).join(" ");
-                return <polygon key={i} points={pts} fill="none" stroke={i === 0 ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.03)"} strokeWidth={i === 0 ? 1 : 0.5} />;
-              })}
-              {/* Mock data polygon */}
-              <polygon points="50,25 68,40 72,60 65,80 50,85 35,80 28,60 32,40" fill="rgba(192,57,43,0.2)" stroke="var(--yima-red)" strokeWidth="1.5" fillOpacity="0.3" />
-            </svg>
-            <div className="flex justify-between text-[10px] mt-2" style={{ color: "var(--text-muted)" }}>
-              <span>9维度分析</span><span>改进路线图</span><span>行业对标</span>
+            <div className="hero-stats">
+              <div><div className="hero-stat-val">3,286<span> 家</span></div><div className="hero-stat-lbl">已完成诊断</div></div>
+              <div><div className="hero-stat-val">78<span> 分</span></div><div className="hero-stat-lbl">企业平均分</div></div>
+              <div><div className="hero-stat-val">94<span>%</span></div><div className="hero-stat-lbl">报告满意度</div></div>
             </div>
           </div>
-        </div>
-
-        <p className="text-xs sm:text-sm mb-5" style={{ color: "var(--text-muted)" }}>共 72 题 · 约 15-20 分钟 · 完全免费</p>
-
-        {/* Primary CTA with hover */}
-        <button onClick={onStart} className="w-full py-4 rounded-xl font-semibold text-base sm:text-lg transition-all active:scale-[0.98] shadow-lg mb-3"
-          style={{ background: "var(--yima-red)", color: "white", boxShadow: "0 0 20px rgba(192,57,43,0.3)", transition: "box-shadow 0.2s, transform 0.2s" }}
-          onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.boxShadow = "0 0 32px rgba(192,57,43,0.5)"; (e.target as HTMLButtonElement).style.transform = "translateY(-1px)"; }}
-          onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.boxShadow = "0 0 20px rgba(192,57,43,0.3)"; (e.target as HTMLButtonElement).style.transform = "none"; }}>
-          开始免费诊断
-        </button>
-
-        {/* Secondary CTA */}
-        <a href="/share?score=78&level=成熟型" className="text-xs font-medium transition-all inline-block" style={{ color: "var(--text-secondary)", borderBottom: "1px dashed var(--text-muted)" }}>
-          先看看样本报告 →
-        </a>
-
-        <p className="text-[11px] mt-4" style={{ color: "var(--text-muted)" }}>已有 3,286 家企业完成诊断 · 答题进度自动保存</p>
-
-        {/* Social proof */}
-        <div className="mt-8 pt-6" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-          <p className="text-[10px] sm:text-xs mb-3 uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>已服务客户</p>
-          <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
-            <span>百果园</span><span style={{ color: "var(--text-muted)" }}>·</span>
-            <span>锅圈食汇</span><span style={{ color: "var(--text-muted)" }}>·</span>
-            <span>木屋烧烤</span><span style={{ color: "var(--text-muted)" }}>·</span>
-            <span>苏宁</span><span style={{ color: "var(--text-muted)" }}>·</span>
-            <span>良品铺子</span><span style={{ color: "var(--text-muted)" }}>·</span>
-            <span>周黑鸭</span>
+          {/* Dashboard preview */}
+          <div className="hero-dash-card">
+            <div className="dash-header">
+              <div className="dash-dots"><span className="dash-dot r" /><span className="dash-dot y" /><span className="dash-dot g" /></div>
+              <div className="dash-tag">LIVE</div>
+            </div>
+            <div className="dash-score-row">
+              <div className="dash-big-num">78<span className="unit">/100</span></div>
+              <div className="dash-level"><b>成熟型</b><br />超过 68% 同行</div>
+            </div>
+            <div className="dash-grid">
+              <div className="dash-mini"><div className="dash-mini-label">战略定位</div><div className="dash-mini-val" style={{color:"#10B981"}}>85</div><div className="dash-mini-bar"><div className="dash-mini-fill green" style={{width:"85%"}} /></div></div>
+              <div className="dash-mini"><div className="dash-mini-label">运营标准</div><div className="dash-mini-val" style={{color:"#60A5FA"}}>72</div><div className="dash-mini-bar"><div className="dash-mini-fill blue" style={{width:"72%"}} /></div></div>
+              <div className="dash-mini"><div className="dash-mini-label">数字化</div><div className="dash-mini-val" style={{color:"#F59E0B"}}>45</div><div className="dash-mini-bar"><div className="dash-mini-fill cyan" style={{width:"45%"}} /></div></div>
+              <div className="dash-mini"><div className="dash-mini-label">人才体系</div><div className="dash-mini-val" style={{color:"#818CF8"}}>60</div><div className="dash-mini-bar"><div className="dash-mini-fill blue" style={{width:"60%"}} /></div></div>
+            </div>
           </div>
-          <p className="text-[10px] mt-2" style={{ color: "var(--text-muted)" }}>3,000+ 会员企业 · 195 家已上市</p>
-          <p className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>方法论进入 200+ 高校教材 · 25 本连锁专著 · 国家版权课程</p>
         </div>
+      </section>
 
-        {/* FAQ */}
-        <div className="mt-8 pt-6 text-left" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-          <p className="text-[10px] sm:text-xs mb-3 uppercase tracking-wider text-center" style={{ color: "var(--text-muted)" }}>常见问题</p>
-          {[
-            { q: "真的免费吗？", a: "完全免费。诊断是逸马方法论的产品化，我们靠深度咨询盈利。" },
-            { q: "我的答题数据会泄露吗？", a: "数据仅用于生成你的诊断报告，不会分享给第三方。" },
-            { q: "适合什么阶段的企业？", a: "10-500 家门店的连锁企业最有价值。单店个体户或超成熟企业参考价值有限。" },
-            { q: "为什么逸马要做这个？", a: "22年连锁咨询经验的产品化，让你先体验方法论的价值。" },
-          ].map((faq) => (
-            <details key={faq.q} className="mb-2 text-xs" style={{ color: "var(--text-secondary)" }}>
-              <summary className="cursor-pointer py-1 font-medium" style={{ color: "var(--text-primary)" }}>{faq.q}</summary>
-              <p className="mt-1 ml-2" style={{ color: "var(--text-muted)" }}>{faq.a}</p>
-            </details>
+      {/* TRUST BAR */}
+      <section className="trust-bar">
+        <div className="trust-track">
+          {[["22 年","连锁咨询深耕"],["3,000+","会员企业"],["195 家","已上市"],["200+","高校教材覆盖"],["72 项","诊断指标"]].map(([n, l]) => (
+            <div key={l} className="trust-item"><div className="trust-num">{n.split(" ")[0]}<span className="unit">{n.includes(" ") ? " " + n.split(" ")[1] : ""}</span></div><div className="trust-label">{l}</div></div>
           ))}
         </div>
+      </section>
 
-        {/* Mobile QR hint */}
-        <div className="mt-8 pt-6 text-center" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-          <img src="/logo.png" alt="逸马诊断" className="w-12 h-12 mx-auto mb-2 rounded-xl opacity-70" />
-          <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>手机浏览器打开 yima777.cn 随时测</p>
+      {/* HOW IT WORKS */}
+      <section className="landing-section" id="how">
+        <div className="landing-section-inner">
+          <div className="section-label">诊断流程</div>
+          <h2 className="section-title">三步完成诊断，即时出报告</h2>
+          <p className="section-sub">无需注册，AI 引擎自动分析，15-20分钟获得专业级连锁成熟度评估</p>
+          <div className="steps-grid">
+            {[{ n:"01", i:"📝", t:"填写诊断问卷", d:"72道专业题目，覆盖连锁经营全部关键维度。答题进度实时保存，支持中途退出续答。" },
+              { n:"02", i:"🧠", t:"AI智能分析", d:"基于22年行业数据训练的算法引擎，自动生成9维雷达图、成熟度评分和同业对比。" },
+              { n:"03", i:"📄", t:"获取诊断报告", d:"一键下载PDF报告，含改进路线图与优先级矩阵。适合10-500家门店的连锁企业。" }].map((s) => (
+              <div key={s.n} className="step-card reveal">
+                <div className="step-num">{s.n}</div>
+                <div className="step-icon">{s.i}</div>
+                <h3>{s.t}</h3>
+                <p>{s.d}</p>
+              </div>
+            ))}
+          </div>
         </div>
+      </section>
+
+      {/* 9 DIMENSIONS */}
+      <section className="landing-section alt" id="model">
+        <div className="landing-section-inner">
+          <div className="section-label">诊断模型</div>
+          <h2 className="section-title">9维度连锁成熟度模型</h2>
+          <p className="section-sub">从战略顶层到执行细节，系统化诊断企业核心竞争力</p>
+          <div className="model-grid">
+            <div className="model-tags reveal">
+              {DIMENSION_ORDER.map((d, i) => <span key={d} className={`model-tag${i===0?" active":""}`} title={DIMENSION_TIPS[d]}>{i===0?"🎯 ":i===1?"💰 ":i===2?"📋 ":i===3?"👥 ":i===4?"🔗 ":i===5?"📚 ":i===6?"✅ ":i===7?"💻 ":"🏛 "}{DIMENSION_LABELS[d]}</span>)}
+            </div>
+            <div className="reveal" style={{display:"flex",justifyContent:"center"}}>
+              <svg viewBox="0 0 200 200" width="100%" style={{maxWidth:340}}>
+                <defs>
+                  <linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.25"/>
+                    <stop offset="100%" stopColor="#06B6D4" stopOpacity="0.08"/>
+                  </linearGradient>
+                </defs>
+                {[20,40,60,80].map(r => <circle key={r} cx="100" cy="100" r={r} fill="none" stroke="rgba(59,130,246,0.06)" strokeWidth="0.5"/>)}
+                <line x1="100" y1="20" x2="100" y2="180" stroke="rgba(59,130,246,0.04)" strokeWidth="0.5"/>
+                <line x1="20" y1="100" x2="180" y2="100" stroke="rgba(59,130,246,0.04)" strokeWidth="0.5"/>
+                <polygon points="100,28 152,52 175,100 158,152 100,170 42,152 25,100 48,52" fill="url(#rg)" stroke="#3B82F6" strokeWidth="1.5"/>
+                {[[100,28],[152,52],[175,100],[158,152],[100,170],[42,152],[25,100],[48,52]].map(([cx,cy]) => <circle key={`${cx},${cy}`} cx={cx} cy={cy} r="3" fill="#60A5FA"/>)}
+              </svg>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SAMPLE REPORT */}
+      <section className="landing-section" id="report">
+        <div className="landing-section-inner">
+          <div className="section-label">诊断产出</div>
+          <h2 className="section-title">你的专属连锁诊断报告</h2>
+          <p className="section-sub">不止一个分数 —— 你会获得完整的改进地图和行业对标分析</p>
+          <div className="report-grid">
+            <div className="report-card reveal">
+              <div className="report-card-top">
+                <div className="dash-dots"><span className="dash-dot r" /><span className="dash-dot y" /><span className="dash-dot g" /></div>
+                <span style={{fontSize:10,color:"var(--text-muted)"}}>DIAGNOSTIC REPORT</span>
+              </div>
+              <div className="report-card-body">
+                <div style={{fontSize:10,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:1}}>成熟度总分</div>
+                <div className="report-score">78<span style={{fontSize:18,color:"var(--text-muted)"}}> /100</span></div>
+                <div style={{fontSize:11,color:"var(--text-muted)"}}>成熟型 · 超过 68% 同规模企业</div>
+                <div className="report-bar-list">
+                  {[["战略",85,"h"],["运营",72,"h"],["人才",60,"m"],["数字化",45,"m"],["供应链",78,"h"]].map(([n,v,c]) => (
+                    <div key={n as string} className="report-bar-row"><span className="report-bar-name">{n}</span><div className="report-bar-track"><div className={`report-bar-fill ${c}`} style={{width:`${v}%`}} /></div><span className="report-bar-val">{v}</span></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="report-features reveal">
+              <h4>每份报告包含</h4>
+              {["9维度成熟度雷达图 + 同业对比","改进优先级矩阵（紧急/重要）","分阶段升级路线图（0→6→12月）","关键短板与风险预警","行业标杆数据对标","逸马专家深度解读"].map((f,i) => (
+                <div key={i} className="report-feat"><span style={{color:"var(--accent)",fontWeight:700,flexShrink:0}}>◆</span> {f}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CLIENTS */}
+      <section className="landing-section alt" id="clients">
+        <div className="landing-section-inner">
+          <div className="section-label">服务客户</div>
+          <h2 className="section-title">行业头部企业的共同选择</h2>
+          <div className="client-row reveal">
+            {["百果园","锅圈食汇","木屋烧烤","苏宁","良品铺子","周黑鸭"].map(c => <span key={c} className="client-tile">{c}</span>)}
+          </div>
+          <div className="client-stats reveal">
+            {[["3,000+","会员企业"],["195家","已上市"],["200+","高校教材覆盖"],["25本","连锁专著"]].map(([n,l]) => (
+              <div key={l} className="client-stat"><div className="client-stat-num">{n}</div><div className="client-stat-lbl">{l}</div></div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="landing-section" id="faq">
+        <div className="landing-section-inner">
+          <div className="section-label">常见问题</div>
+          <h2 className="section-title">快速解答</h2>
+          <div className="faq-grid">
+            {[
+              { q:"真的完全免费吗？", a:"完全免费。诊断是我们22年方法论的产品化展示，通过深度咨询项目盈利，诊断环节不收取任何费用。" },
+              { q:"答题数据安全吗？", a:"数据加密传输，仅用于生成你的诊断报告，绝不会分享给任何第三方。" },
+              { q:"适合什么规模的企业？", a:"10-500家门店的连锁企业最具诊断价值。单店或超大型集团参考意义有限。" },
+              { q:"报告多久能出来？", a:"提交问卷后即时生成，PDF报告可直接下载保存，也可在线查看。" },
+              { q:"可以重复测试吗？", a:"建议每6个月复诊一次，追踪成熟度变化趋势，量化改进行动效果。" },
+              { q:"逸马为什么做免费诊断？", a:"让更多连锁企业体验22年方法论的价值，建立信任后再探讨深度合作可能。" },
+            ].map((faq, i) => (
+              <div key={i} className={`faq-item${openFaq===i?" open":""}`} onClick={() => setOpenFaq(openFaq===i?null:i)}>
+                <div className="faq-q">{faq.q}<span className="toggle">+</span></div>
+                <div className="faq-a">{faq.a}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA BANNER */}
+      <section className="cta-banner-section">
+        <h2>你的连锁能打几分？</h2>
+        <p className="cta-sub">3,286家企业已获得清晰诊断报告，现在轮到你了</p>
+        <button onClick={onStart} className="btn-primary">→ 开始免费诊断</button>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="landing-footer">
+        <div className="footer-brand">
+          <div className="f-logo">逸</div>
+          <h4 style={{fontSize:14,fontWeight:700,marginBottom:4}}>逸马连锁成熟度诊断</h4>
+          <p>基于22年连锁咨询方法论<br />9维度全面评估体系成熟度<br />手机浏览器打开 yima777.cn 随时测</p>
+        </div>
+        <div>
+          <h5>快速导航</h5>
+          <a href="#how">诊断流程</a><a href="#model">9维模型</a><a href="#report">样本报告</a><a href="#faq">常见问题</a>
+        </div>
+        <div>
+          <h5>关于逸马</h5>
+          <a href="#">逸马官网</a><a href="#">连锁专著</a><a href="#">咨询合作</a>
+        </div>
+      </footer>
+      <div className="footer-bar">
+        <span>© 2026 逸马诊断 yima777.cn</span>
+        <span>方法论进入 200+ 高校教材 · 25本连锁专著 · 国家版权课程</span>
       </div>
-    </div>
+    </>
   );
 }
 
