@@ -23,6 +23,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
 export default async function SharePage({ searchParams }: Props) {
   const { score = "0", level = "成长型" } = await searchParams;
+  const levelColor = level === "领先型" ? "#10b981" : level === "成熟型" ? "#3b82f6" : level === "成长型" ? "#f59e0b" : "#ef4444";
 
   return (
     <html lang="zh-CN">
@@ -30,19 +31,33 @@ export default async function SharePage({ searchParams }: Props) {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>{`逸马诊断 - ${score}分（${level}）`}</title>
-        <meta httpEquiv="refresh" content={`0;url=/?score=${score}&level=${encodeURIComponent(level)}`} />
         <style dangerouslySetInnerHTML={{ __html: `
-          body { margin:0; background:#0a0a0f; color:#e0e0e0; display:flex; align-items:center; justify-content:center; height:100vh; font-family:Arial,sans-serif; }
-          .card { text-align:center; }
-          .score { font-size:80px; font-weight:900; }
-          .label { color:#888; font-size:20px; margin-top:8px; }
+          * { margin:0; padding:0; box-sizing:border-box; }
+          body { background:#0a0a0f; color:#e0e0e0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; min-height:100dvh; display:flex; align-items:center; justify-content:center; padding:24px; }
+          .card { max-width:400px; width:100%; text-align:center; }
+          .score-circle { width:160px; height:160px; margin:0 auto 16px; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(255,255,255,0.04); border:3px solid ${levelColor}; }
+          .score-num { font-size:64px; font-weight:900; line-height:1; }
+          .score-label { font-size:14px; color:#888; margin-top:4px; }
+          .level-badge { display:inline-block; padding:6px 24px; border-radius:20px; font-size:16px; font-weight:bold; color:${levelColor}; background:${levelColor}22; border:1px solid ${levelColor}; margin-bottom:24px; }
+          .cta { display:block; width:100%; padding:16px; border-radius:14px; font-size:18px; font-weight:bold; background:#c0392b; color:#fff; border:none; cursor:pointer; text-decoration:none; margin-bottom:8px; transition:all 0.2s; }
+          .cta:hover { box-shadow:0 0 30px rgba(192,57,43,0.45); transform:translateY(-1px); }
+          .sub { color:#888; font-size:12px; }
+          .footer { margin-top:32px; padding-top:24px; border-top:1px solid rgba(255,255,255,0.06); color:#666; font-size:12px; }
         `}} />
       </head>
       <body>
         <div className="card">
-          <div className="score">{score}</div>
-          <div className="label">综合得分 · {level}</div>
-          <p style={{color:"#666",fontSize:"14px",marginTop:"24px"}}>跳转中...</p>
+          <div className="score-circle">
+            <div className="score-num">{score}</div>
+            <div className="score-label">综合得分</div>
+          </div>
+          <div className="level-badge">{level}</div>
+          <p style={{color:"#888",fontSize:"15px",marginBottom:"24px"}}>你的连锁企业多少分？</p>
+          <a href="/" className="cta">开始免费诊断 →</a>
+          <p className="sub">72题 · 15-20分钟 · 完全免费</p>
+          <div className="footer">
+            逸马 22 年连锁方法论 · 3,000+ 会员企业
+          </div>
         </div>
       </body>
     </html>

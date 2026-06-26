@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { questions, industryWarmup } from "@/lib/questions";
 import { calculateScores } from "@/lib/scoring";
-import { DIMENSION_LABELS, DIMENSION_ORDER, type Question } from "@/lib/types";
+import { DIMENSION_LABELS, DIMENSION_ORDER, DIMENSION_TIPS, type Question } from "@/lib/types";
 
 const STORAGE_KEY = "yima_diagnosis_draft";
 
@@ -114,16 +114,43 @@ function Welcome({ onStart }: { onStart: () => void }) {
           ))}
         </div>
 
-        {/* Dimension tags */}
+        {/* Dimension tags with tooltips */}
         <div className="flex flex-wrap justify-center gap-1.5 mb-5 text-[11px]" style={{ color: "var(--text-muted)" }}>
-          {DIMENSION_ORDER.map((d) => <span key={d} className="glass-card rounded-full px-2.5 py-0.5" style={{ background: "rgba(255,255,255,0.03)" }}>{DIMENSION_LABELS[d]}</span>)}
+          {DIMENSION_ORDER.map((d) => <span key={d} title={DIMENSION_TIPS[d] || ""} className="glass-card rounded-full px-2.5 py-0.5 cursor-default" style={{ background: "rgba(255,255,255,0.03)" }}>{DIMENSION_LABELS[d]}</span>)}
+        </div>
+
+        {/* Report preview mockup */}
+        <div className="mb-5 glass-card rounded-2xl p-3 text-left" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: "rgba(192,57,43,0.15)", color: "var(--yima-red)" }}>📊</div>
+            <span className="text-[11px] font-semibold" style={{ color: "var(--text-secondary)" }}>完成诊断后你将获得</span>
+          </div>
+          <div className="bg-[#08080d] rounded-xl p-3" style={{ border: "1px solid rgba(255,255,255,0.04)" }}>
+            {/* Mini radar chart */}
+            <svg viewBox="0 0 120 120" className="w-full" style={{ maxHeight: "120px" }}>
+              {[60,45,30,15].map((r, i) => {
+                const pts = [0,1,2,3,4,5,6,7,8].map(a => {
+                  const angle = (Math.PI * 2 / 9) * a - Math.PI / 2;
+                  return `${50 + r * Math.cos(angle)},${50 + r * Math.sin(angle)}`;
+                }).join(" ");
+                return <polygon key={i} points={pts} fill="none" stroke={i === 0 ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.03)"} strokeWidth={i === 0 ? 1 : 0.5} />;
+              })}
+              {/* Mock data polygon */}
+              <polygon points="50,25 68,40 72,60 65,80 50,85 35,80 28,60 32,40" fill="rgba(192,57,43,0.2)" stroke="var(--yima-red)" strokeWidth="1.5" fillOpacity="0.3" />
+            </svg>
+            <div className="flex justify-between text-[10px] mt-2" style={{ color: "var(--text-muted)" }}>
+              <span>9维度分析</span><span>改进路线图</span><span>行业对标</span>
+            </div>
+          </div>
         </div>
 
         <p className="text-xs sm:text-sm mb-5" style={{ color: "var(--text-muted)" }}>共 72 题 · 约 15-20 分钟 · 完全免费</p>
 
-        {/* Primary CTA */}
+        {/* Primary CTA with hover */}
         <button onClick={onStart} className="w-full py-4 rounded-xl font-semibold text-base sm:text-lg transition-all active:scale-[0.98] shadow-lg mb-3"
-          style={{ background: "var(--yima-red)", color: "white", boxShadow: "0 0 20px rgba(192,57,43,0.3)" }}>
+          style={{ background: "var(--yima-red)", color: "white", boxShadow: "0 0 20px rgba(192,57,43,0.3)", transition: "box-shadow 0.2s, transform 0.2s" }}
+          onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.boxShadow = "0 0 32px rgba(192,57,43,0.5)"; (e.target as HTMLButtonElement).style.transform = "translateY(-1px)"; }}
+          onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.boxShadow = "0 0 20px rgba(192,57,43,0.3)"; (e.target as HTMLButtonElement).style.transform = "none"; }}>
           开始免费诊断
         </button>
 
@@ -146,6 +173,7 @@ function Welcome({ onStart }: { onStart: () => void }) {
             <span>周黑鸭</span>
           </div>
           <p className="text-[10px] mt-2" style={{ color: "var(--text-muted)" }}>3,000+ 会员企业 · 195 家已上市</p>
+          <p className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>方法论进入 200+ 高校教材 · 25 本连锁专著 · 国家版权课程</p>
         </div>
 
         {/* FAQ */}
@@ -154,6 +182,7 @@ function Welcome({ onStart }: { onStart: () => void }) {
           {[
             { q: "真的免费吗？", a: "完全免费。诊断是逸马方法论的产品化，我们靠深度咨询盈利。" },
             { q: "我的答题数据会泄露吗？", a: "数据仅用于生成你的诊断报告，不会分享给第三方。" },
+            { q: "适合什么阶段的企业？", a: "10-500 家门店的连锁企业最有价值。单店个体户或超成熟企业参考价值有限。" },
             { q: "为什么逸马要做这个？", a: "22年连锁咨询经验的产品化，让你先体验方法论的价值。" },
           ].map((faq) => (
             <details key={faq.q} className="mb-2 text-xs" style={{ color: "var(--text-secondary)" }}>
