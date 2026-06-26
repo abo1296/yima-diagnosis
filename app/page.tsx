@@ -131,19 +131,6 @@ function Welcome({ onStart }: { onStart: () => void }) {
     return () => { cancelAnimationFrame(animId); window.removeEventListener("resize", resize); window.removeEventListener("mousemove", onMove); };
   }, []);
 
-  // Custom cursor
-  useEffect(() => {
-    const dot = document.createElement("div"); dot.className = "cursor-dot"; document.body.appendChild(dot);
-    const ring = document.createElement("div"); ring.className = "cursor-ring"; document.body.appendChild(ring);
-    const onMove = (e:MouseEvent) => { dot.style.left = e.clientX+"px"; dot.style.top = e.clientY+"px"; ring.style.left = e.clientX+"px"; ring.style.top = e.clientY+"px"; };
-    window.addEventListener("mousemove", onMove);
-    const hoverEls = document.querySelectorAll("a,button,.hero-3d-card,.card-mini,.magnetic-card,.report-card,.report-feat,.client-tile,.faq-item,.model-tag,.trust-card");
-    const onEnter = () => ring.classList.add("hover");
-    const onLeave = () => ring.classList.remove("hover");
-    hoverEls.forEach(el => { el.addEventListener("mouseenter", onEnter); el.addEventListener("mouseleave", onLeave); });
-    return () => { dot.remove(); ring.remove(); window.removeEventListener("mousemove", onMove); };
-  }, []);
-
   // 3D tilt card
   const handleTilt = (e: React.MouseEvent) => {
     if (!heroCardRef.current) return;

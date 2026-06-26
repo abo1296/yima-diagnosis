@@ -35,9 +35,7 @@
 body {
   background: var(--bg); color: var(--text-primary);
   font-family: Arial, Helvetica, sans-serif; overflow-x: hidden;
-  cursor: none;
 }
-@media (max-width:768px){body{cursor:auto}}
 
 /* ===== CUSTOM CURSOR ===== */
 .cursor-dot { position:fixed; width:4px; height:4px; background:#60A5FA; border-radius:50%; pointer-events:none; z-index:9999; }
@@ -61,8 +59,7 @@ body {
 .nav-links a { color:var(--text-secondary); text-decoration:none; font-size:13px; font-weight:500; transition:color .2s; }
 .nav-links a:hover { color:#fff; }
 .nav-cta {
-  padding:10px 24px; border-radius:8px; font-size:13px; font-weight:600; color:#fff; border:none; cursor:none;
-  background:linear-gradient(135deg,#3B82F6,#1D4ED8); box-shadow:0 0 20px rgba(59,130,246,0.2); transition:all .3s;
+  padding:10px 24px; border-radius:8px; font-size:13px; font-weight:600; color:#fff; border:none;   background:linear-gradient(135deg,#3B82F6,#1D4ED8); box-shadow:0 0 20px rgba(59,130,246,0.2); transition:all .3s;
 }
 .nav-cta:hover { box-shadow:0 0 36px rgba(59,130,246,0.5); transform:translateY(-2px); }
 
@@ -96,8 +93,7 @@ body {
 .hero-stat-val span { font-size:12px; color:var(--brand-light); }
 .hero-stat-lbl { font-size:10px; color:var(--text-muted); margin-top:2px; }
 .btn-main {
-  padding:18px 36px; border-radius:14px; font-size:16px; font-weight:700; color:#fff; border:none; cursor:none;
-  background:linear-gradient(135deg,#3B82F6,#2563EB); text-decoration:none;
+  padding:18px 36px; border-radius:14px; font-size:16px; font-weight:700; color:#fff; border:none;   background:linear-gradient(135deg,#3B82F6,#2563EB); text-decoration:none;
   display:inline-flex; align-items:center; gap:10px;
   box-shadow:0 8px 32px rgba(59,130,246,0.3); transition:all .3s;
   position:relative; overflow:hidden;
@@ -111,8 +107,7 @@ body {
 .btn-main:hover { box-shadow:0 12px 48px rgba(59,130,246,0.5); transform:translateY(-3px); }
 .btn-ghost {
   padding:18px 36px; border-radius:14px; font-size:16px; font-weight:600; color:#fff;
-  background:transparent; border:1px solid rgba(255,255,255,0.12); cursor:none;
-  text-decoration:none; display:inline-flex; align-items:center; gap:10px; transition:all .3s;
+  background:transparent; border:1px solid rgba(255,255,255,0.12);   text-decoration:none; display:inline-flex; align-items:center; gap:10px; transition:all .3s;
 }
 .btn-ghost:hover { background:rgba(255,255,255,0.03); border-color:rgba(255,255,255,0.25); }
 
@@ -183,8 +178,7 @@ body {
 .magnetic-card {
   position:relative; padding:44px 32px; border-radius:20px;
   background:linear-gradient(145deg,rgba(15,23,42,0.8),rgba(10,20,40,0.9));
-  border:1px solid var(--border); overflow:hidden; cursor:none;
-  transition:all .3s,transform .15s ease-out;
+  border:1px solid var(--border); overflow:hidden;   transition:all .3s,transform .15s ease-out;
 }
 .magnetic-card::before {
   content:''; position:absolute; top:0; left:20%; right:20%; height:2px;
