@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { questions, industryWarmup } from "@/lib/questions";
 import { calculateScores } from "@/lib/scoring";
 import { DIMENSION_LABELS, DIMENSION_ORDER, type Question } from "@/lib/types";
@@ -62,9 +63,8 @@ export default function Page() {
   const [surveyStep, setSurveyStep] = useState<{ dimIdx: number; showIntro: boolean; qIdx: number }>({ dimIdx: 0, showIntro: true, qIdx: 0 });
   const [showAdmin, setShowAdmin] = useState(false);
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("admin")) setShowAdmin(true);
-  }, []);
+  // 检测 admin 参数
+  useEffect(() => { setShowAdmin(window.location.search.includes("admin")); }, []);
 
   // admin panel: yima777.cn/?admin
   if (showAdmin) return <AdminPanel onBack={() => setShowAdmin(false)} />;
