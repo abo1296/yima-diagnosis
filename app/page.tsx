@@ -870,6 +870,27 @@ function getRating(gap: number): string {
   return "薄弱";
 }
 
+// 基于实际分数生成 fallback 路线图
+function generateFallbackActions(sortedDims: { dim: string; score: number; label: string }[]): { title: string; why: string; timeline: string }[] {
+  const lowest3 = sortedDims.slice(0, 3);
+  const prescriptions: Record<string, { title: string; why: string }> = {
+    digital: { title: "数字化系统上线", why: "引入轻量级数据看板，打通门店POS与总部，让数据不再靠微信报" },
+    training: { title: "培训体系标准化", why: "把最核心的3个岗位操作拍成视频，新员工上岗培训从2周缩到3天" },
+    supervision: { title: "建立督导检查机制", why: "每月1次标准巡店+整改闭环，门店执行一致性是连锁的生命线" },
+    supply_chain: { title: "供应链集中化采购", why: "核心原料集采占比每提升10%，综合成本下降2-3个点" },
+    operation: { title: "运营标准手册落地", why: "把'看经验'变成'看手册'，第1家店和第50家店长按同一套标准干活" },
+    organization: { title: "店长梯队建设", why: "1个店长管1家店→1个店长培养3个副手，扩张才有人可用" },
+    model: { title: "单店盈利模型优化", why: "算清每家店的真实盈亏，砍掉不赚钱的产品线，把坪效提上来" },
+    strategy: { title: "品牌定位校准", why: "你的顾客到底为什么选你而不是隔壁？3句话讲清楚差异化" },
+    culture: { title: "企业文化落地", why: "不是墙上贴标语，而是把价值观变成每月1个具体行为考核" },
+  };
+  return lowest3.map((d, i) => ({
+    title: prescriptions[d.dim]?.title || `提升${d.label}`,
+    why: prescriptions[d.dim]?.why || `${d.label}得分偏低(${d.score}分)，优先投入资源改善`,
+    timeline: i === 0 ? "0-3个月" : i === 1 ? "3-6个月" : "6-12个月",
+  }));
+}
+
 function getIndustryLeading(industry?: string): Record<string, number> {
   const m: Record<string, Record<string, number>> = {
     "餐饮": { strategy: 88, model: 85, operation: 82, organization: 78, supply_chain: 80, training: 75, supervision: 76, digital: 68, culture: 85 },
@@ -912,6 +933,8 @@ function NewReportView({ scores, report, error, info, barsAnimated, onRestart }:
   }, [scores.scores]);
   const strengths = sortedDims.slice(0, 3);
   const improvements = sortedDims.slice(-3).reverse();
+  const sortedByScore = useMemo(() => [...sortedDims].sort((a, b) => a.score - b.score), [sortedDims]);
+  const fallbackActions = useMemo(() => generateFallbackActions(sortedByScore), [sortedByScore]);
 
   // AI report dimensions mapped by both Chinese dim name and English key
   const reportDimMap = useMemo(() => {
@@ -1150,11 +1173,7 @@ function NewReportView({ scores, report, error, info, barsAnimated, onRestart }:
       <div className="s-section stagger">
         <h3 className="s-title">改进路线图</h3>
         <div className="road-grid-r">
-          {(report?.actions || [
-            { title: "数字化筑基", why: "引入轻量级数据中台", timeline: "0-6个月" },
-            { title: "标准化升级", why: "搭建SOP知识库与培训平台", timeline: "6-12个月" },
-            { title: "规模扩张准备", why: "完善加盟商赋能体系", timeline: "12-18个月" },
-          ]).slice(0, 3).map((act, i) => {
+          {(report?.actions || fallbackActions).slice(0, 3).map((act, i) => {
             const phases = ["Phase 1", "Phase 2", "Phase 3"];
             const lines = ["p1", "p2", "p3"];
             return (
@@ -1193,6 +1212,19 @@ function NewReportView({ scores, report, error, info, barsAnimated, onRestart }:
           </div>
         </div>
       )}
+
+      {/* ===== 推荐下一步行动 ===== */}
+      <div className="s-section stagger">
+        <div className="glass-card p-4 sm:p-6" style={{ borderColor: "rgba(16,185,129,0.2)", borderLeft: "3px solid #10b981" }}>
+          <h3 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "#10b981" }}>🎯 推荐下一步</h3>
+          <p className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
+            {sortedByScore[0].label}是当前最大短板（{sortedByScore[0].score}分）
+          </p>
+          <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+            {fallbackActions[0].why}
+          </p>
+        </div>
+      </div>
 
       {/* ===== CTA ===== */}
       <div className="s-section stagger noprint">
