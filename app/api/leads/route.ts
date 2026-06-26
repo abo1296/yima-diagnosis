@@ -25,6 +25,14 @@ async function kvGet(key: string) {
   return await res.text();
 }
 
+// JSON.stringify 的 UTF-8 安全版本（中文转 \uXXXX，绕开 Workers bug）
+function safeJson(obj: unknown): string {
+  return JSON.stringify(obj).replace(/[^\x00-\x7F]/g, (ch) => {
+    const cp = ch.codePointAt(0)!;
+    return '\\u' + cp.toString(16).padStart(4, '0');
+  });
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -55,13 +63,13 @@ export async function POST(request: Request) {
           if (val) leads.push(JSON.parse(val));
         }
         leads.sort((a: any, b: any) => b.time?.localeCompare(a.time || "") || 0);
-        return Response.json({ leads: leads.slice(0, 50) });
+        return new Response(safeJson({ leads: leads.slice(0, 50) }), { headers: { "Content-Type": "application/json" } });
       } catch (e: unknown) {
-        return Response.json({ error: (e as Error).message, leads: [] }, { status: 200 });
+        return new Response(safeJson({ error: (e as Error).message, leads: [] }), { status: 200, headers: { "Content-Type": "application/json" } });
       }
     }
 
-    if (!phone) return Response.json({ error: "phone required" }, { status: 400 });
+    if (!phone) return new Response(safeJson({ error: "phone required" }), { status: 400, headers: { "Content-Type": "application/json" } });
 
     // 存线索
     await kvPut(`lead:${Date.now()}:${phone}`, JSON.stringify({
@@ -80,8 +88,8 @@ export async function POST(request: Request) {
       try { await fetch(webhook, { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }); } catch {}
     }
 
-    return Response.json({ success: true, kv: true });
+    return new Response(safeJson({ success: true, kv: true }), { headers: { "Content-Type": "application/json" } });
   } catch (e: unknown) {
-    return Response.json({ error: (e as Error).message }, { status: 500 });
+    return new Response(safeJson({ error: (e as Error).message }), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 }
