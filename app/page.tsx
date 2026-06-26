@@ -835,13 +835,18 @@ function ResultScreen({ scores, info, warmupContext, onRestart }: { scores: Retu
         </div>
       )}
 
-      {/* ===== Phase 3: Full Report ===== */}
+      {/* ===== Phase 3: Full Report (Linear style) ===== */}
       {phase === "report" && (
-        <div ref={contentRef} className={`report-main${phase === "report" ? " show" : ""}`} style={{ padding: "60px 5% 80px" }}>
-          <div className="page-inner" style={{ maxWidth: 960, margin: "0 auto" }}>
+        <>
+          {/* Nav */}
+          <nav className="r-nav">
+            <a href="/" className="r-nav-l">逸马诊断 <span>/</span> 诊断报告</a>
+            <a href="/" className="r-nav-r">开始你的诊断 →</a>
+          </nav>
+          <div ref={contentRef} className="r-main">
             <NewReportView scores={scores} report={report} error={error} info={info} barsAnimated={barsAnimated} onRestart={onRestart} />
           </div>
-        </div>
+        </>
       )}
     </>
   );
@@ -988,120 +993,37 @@ function NewReportView({ scores, report, error, info, barsAnimated, onRestart }:
     return `${120 + r * Math.cos(angle)},${120 + r * Math.sin(angle)}`;
   }).join(" ");
 
-  return (
+    return (
     <>
-      {/* ===== Report Header (身份标识) ===== */}
-      <div className="stagger" style={{ textAlign:"center", marginBottom:32 }}>
-        <p style={{ fontSize:12, color:"var(--text-muted)", letterSpacing:1 }}>
-          {info.industry || "连锁"} · {info.storeCount || "未知规模"} · {today}诊断
-        </p>
+      {/* ===== Header (Linear style) ===== */}
+      <div className="r-breadcrumb"><a href="/" style={{color:"var(--text-muted)",textDecoration:"none"}}>← 返回首页</a></div>
+      <div className="r-header-row">
+        <div className="r-header-info">
+          <h1>连锁成熟度诊断报告</h1>
+          <div className="r-header-meta">{scores.level}型企业 · 超过 <b style={{color:"var(--text-primary)"}}>{percentile}%</b> 同规模企业</div>
+        </div>
+        <div className="r-header-actions">
+          <button className="r-btn r-btn-g" onClick={handleCopy}>复制链接</button>
+          <button className="r-btn r-btn-g" onClick={handlePrint}>导出PDF</button>
+          <button className="r-btn r-btn-p" onClick={onRestart}>重新诊断</button>
+        </div>
       </div>
 
-      {/* ===== Score Summary Bar ===== */}
-      <div className="act-bar stagger">
-        <span style={{ fontSize: 36, fontWeight: 900, background: "linear-gradient(180deg,#F59E0B,#FDE68A)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{scores.overall_score}</span>
-        <span style={{ fontSize: 14, color: "var(--text-muted)", alignSelf: "flex-end", marginBottom: 6 }}>/100 · {scores.level} · 超过 {percentile}% 同行</span>
-        <div style={{ flex: 1 }} />
-        <button className="act-btn" onClick={handleCopy}>📋 复制链接</button>
-        <button className="act-btn" onClick={handlePrint}>📥 下载PDF</button>
-        <button className="act-btn primary" onClick={onRestart}>🔄 重新诊断</button>
-      </div>
-
-      {/* ===== AI Error ===== */}
-      {error && (
-        <div className="text-center py-8 stagger">
-          <p className="text-sm py-2 px-4 rounded-lg inline-block" style={{ color: "#ef4444", background: "rgba(239,68,68,0.1)" }}>{error}</p>
-        </div>
-      )}
-
-      {/* ===== TL;DR Summary ===== */}
-      {report?.summary && (
-        <div className="s-section stagger">
-          <div className="glass-card p-4 sm:p-6" style={{ borderColor: "rgba(59,130,246,0.15)", background: "linear-gradient(135deg, rgba(59,130,246,0.04), rgba(6,182,212,0.02))" }}>
-            <h3 className="s-title">3 秒速览</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", width: 48, flexShrink: 0 }}>最致命</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{report.summary.fatal}</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#10b981", width: 48, flexShrink: 0 }}>最强项</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{report.summary.strongest}</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--brand-light)", width: 48, flexShrink: 0 }}>先做</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{report.summary.first}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ===== Radar + 9 Dimension Bars ===== */}
-      <div className="s-section stagger" ref={radarRef}>
-        <h3 className="s-title">9维度成熟度诊断</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, alignItems: "center" }}>
-          {/* Radar */}
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            <svg viewBox="0 0 240 240" width="100%" style={{ maxWidth: 360 }}>
-              <defs>
-                <linearGradient id="rfGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.35" />
-                  <stop offset="100%" stopColor="#06B6D4" stopOpacity="0.1" />
-                </linearGradient>
-              </defs>
-              {[30, 50, 70, 90].map(r => <circle key={r} cx="120" cy="120" r={r} fill="none" stroke="rgba(59,130,246,0.05)" strokeWidth="0.5" />)}
-              {[0, 45, 90, 135].map(a => {
-                const rad = (a * Math.PI) / 180;
-                return <line key={a} x1={120} y1={120} x2={120 + 95 * Math.cos(rad)} y2={120 + 95 * Math.sin(rad)} stroke="rgba(59,130,246,0.04)" strokeWidth="0.5" />;
-              })}
-              {/* Your score */}
-              <polygon points={radarTargetPoints} fill="url(#rfGrad)" stroke="#3B82F6" strokeWidth="1.5" />
-              {/* Industry avg (dashed) */}
-              <polygon
-                points={DIMENSION_ORDER.map((dim, i) => {
-                  const avg = industryAvgs[dim] || 50;
-                  const angle = (2 * Math.PI / DIMENSION_ORDER.length) * i - Math.PI / 2;
-                  const r = (avg / 100) * 90;
-                  return `${120 + r * Math.cos(angle)},${120 + r * Math.sin(angle)}`;
-                }).join(" ")}
-                fill="none" stroke="rgba(148,163,184,0.2)" strokeWidth="1.5" strokeDasharray="4,3" />
-              {/* Dots */}
-              {DIMENSION_ORDER.map((dim, i) => {
-                const sc = scores.scores[dim] || 0;
-                const angle = (2 * Math.PI / DIMENSION_ORDER.length) * i - Math.PI / 2;
-                const r = (sc / 100) * 90;
-                const x = 120 + r * Math.cos(angle), y = 120 + r * Math.sin(angle);
-                return <circle key={dim} cx={x} cy={y} r="3" fill="#60A5FA" />;
-              })}
-            </svg>
-            {/* Radar legend */}
-            <div style={{ textAlign:"center", marginTop:6 }}>
-              <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:10, color:"var(--text-muted)", marginRight:16 }}>
-                <span style={{ width:12, height:2, background:"#3B82F6", display:"inline-block" }} /> 你的得分
-              </span>
-              <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:10, color:"var(--text-muted)" }}>
-                <span style={{ width:12, height:2, borderTop:"1.5px dashed rgba(148,163,184,0.4)", display:"inline-block" }} /> 行业均值
-              </span>
-            </div>
-          </div>
-          {/* Bar chart */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {DIMENSION_ORDER.map((dim) => {
-              const sc = scores.scores[dim] || 0;
-              let color = "linear-gradient(90deg,#EF4444,#F87171)";
-              if (sc >= 66) color = "linear-gradient(90deg,#10B981,#34D399)";
-              else if (sc >= 41) color = "linear-gradient(90deg,#3B82F6,#60A5FA)";
-              let txtColor = "#10B981";
-              if (sc < 66) txtColor = "#60A5FA";
-              if (sc < 41) txtColor = "#EF4444";
+      {/* ===== Score Block ===== */}
+      <div className="r-score-block stagger">
+        <div className="r-score-num">{scores.overall_score}<span className="unit">/100</span></div>
+        <div className="r-score-info">
+          <div className="r-score-level">{info.industry || "连锁企业"} · {info.storeCount || ""}</div>
+          <div className="r-score-pct">超过 <b style={{color:"var(--text-primary)"}}>{percentile}%</b> 同规模连锁企业</div>
+          <div className="r-score-minis">
+            {sortedDims.slice(0, 4).map(d => {
+              const sc = d.score;
+              let c = "#22c55e"; if (sc < 66) c = "#f59e0b"; if (sc < 41) c = "#ef4444";
               return (
-                <div key={dim} className="dim-bar-row">
-                  <span className="dim-bar-name" style={{ color: "var(--text-secondary)" }}>{DIMENSION_LABELS[dim]}</span>
-                  <div className="dim-bar-track">
-                    <div className="dim-bar-fill" style={{ width: barsAnimated ? `${sc}%` : "0", background: color }} />
-                  </div>
-                  <span className="dim-bar-val" style={{ color: txtColor }}>{sc}</span>
+                <div key={d.dim} className="r-score-mini">
+                  <div className="lbl">{d.label}</div>
+                  <div className="val" style={{color:c}}>{sc}</div>
+                  <div className="bar"><div className="fill" style={{width:barsAnimated?sc+"%":"0",background:c}} /></div>
                 </div>
               );
             })}
@@ -1109,188 +1031,205 @@ function NewReportView({ scores, report, error, info, barsAnimated, onRestart }:
         </div>
       </div>
 
-      {/* ===== Benchmark Table ===== */}
-      <div className="s-section stagger">
-        <h3 className="s-title">行业对标</h3>
-        <div className="glass-card" style={{ overflow: "hidden" }}>
-          <table className="cmp-table">
-            <thead><tr><th>维度</th><th>你的得分</th><th>行业平均</th><th>领先水平</th><th>差距(领先)</th><th>评级</th></tr></thead>
-            <tbody>
-              {DIMENSION_ORDER.map((dim) => {
-                const my = scores.scores[dim] || 0;
-                const avg = industryAvgs[dim] || 50;
-                const leading = industryLeading[dim] || 75;
-                const gapLeading = my - leading;
-                let dot = "#EF4444"; if (my >= 66) dot = "#10B981"; else if (my >= 41) dot = "#F59E0B";
-                return (
-                  <tr key={dim}>
-                    <td><span className="dot-ind" style={{ background: dot }} />{DIMENSION_LABELS[dim]}</td>
-                    <td><b>{my}</b></td>
-                    <td style={{ color: "var(--text-muted)" }}>{avg}</td>
-                    <td style={{ color: "var(--brand-light)", fontWeight:600 }}>{leading}</td>
-                    <td className={gapLeading >= 0 ? "gap-up" : "gap-down"}>{gapLeading >= 0 ? `↑ +${gapLeading}` : `↓ ${gapLeading}`}</td>
-                    <td style={{ color: gapLeading >= 0 ? "#10B981" : gapLeading >= -10 ? "var(--text-muted)" : "#EF4444", fontWeight: 600, fontSize: 12 }}>
-                      {gapLeading >= 0 ? "领先" : gapLeading >= -10 ? "待提升" : "薄弱"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      {/* ===== AI Error ===== */}
+      {error && (
+        <div style={{textAlign:"center",padding:"24px",marginTop:8}}>
+          <p style={{fontSize:13,color:"#ef4444",background:"rgba(239,68,68,0.06)",padding:"8px 16px",borderRadius:6,display:"inline-block"}}>{error}</p>
         </div>
+      )}
+
+      {/* ===== TL;DR Summary ===== */}
+      {report?.summary && (
+        <div className="r-section stagger">
+          <div className="r-shead">3秒速览</div>
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,fontSize:13}}>
+              <span style={{fontWeight:600,color:"#ef4444",width:56}}>最致命</span>
+              <span style={{color:"var(--text-primary)"}}>{report.summary.fatal}</span>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:8,fontSize:13}}>
+              <span style={{fontWeight:600,color:"#22c55e",width:56}}>最强项</span>
+              <span style={{color:"var(--text-primary)"}}>{report.summary.strongest}</span>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:8,fontSize:13}}>
+              <span style={{fontWeight:600,color:"var(--brand-light)",width:56}}>先做</span>
+              <span style={{color:"var(--text-primary)"}}>{report.summary.first}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== 9-Dimension Radar + Bars ===== */}
+      <div className="r-section stagger" ref={radarRef}>
+        <div className="r-shead">9维度评估详情</div>
+        <div style={{display:"flex",justifyContent:"center",padding:"16px 0"}}>
+          <svg viewBox="0 0 240 240" width="280" height="280">
+            {[20,40,60,80].map(r => <circle key={r} cx="120" cy="120" r={r} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth=".5" />)}
+            <polygon points={DIMENSION_ORDER.map((dim,i) => { const a=2*Math.PI/9*i-Math.PI/2; const r=(industryAvgs[dim]||50)/100*80; return (120+r*Math.cos(a)).toFixed(1)+","+(120+r*Math.sin(a)).toFixed(1); }).join(" ")} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" strokeDasharray="3,3" />
+            <polygon points={radarTargetPoints} fill="rgba(59,130,246,.06)" stroke="#3B82F6" strokeWidth="1.5" />
+            {DIMENSION_ORDER.map((dim,i) => { const sc=scores.scores[dim]||0; const a=2*Math.PI/9*i-Math.PI/2; const r=sc/100*80; return <circle key={dim} cx={(120+r*Math.cos(a)).toFixed(1)} cy={(120+r*Math.sin(a)).toFixed(1)} r="3" fill="#60a5fa" />; })}
+          </svg>
+        </div>
+        <div style={{display:"flex",justifyContent:"center",gap:24,marginBottom:16,fontSize:11,color:"var(--text-muted)"}}>
+          <span style={{display:"inline-flex",alignItems:"center",gap:4}}><span style={{width:12,height:2,background:"#3B82F6"}} /> 你的得分</span>
+          <span style={{display:"inline-flex",alignItems:"center",gap:4}}><span style={{width:12,height:2,borderTop:"1.5px dashed rgba(255,255,255,0.15)"}} /> 行业均值</span>
+        </div>
+        {DIMENSION_ORDER.map(dim => {
+          const sc = scores.scores[dim]||0;
+          let c = "#22c55e"; if (sc < 66) c = "#f59e0b"; if (sc < 41) c = "#ef4444";
+          return (
+            <div key={dim} className="r-bar-row">
+              <span className="r-bar-name">{DIMENSION_LABELS[dim]}</span>
+              <div className="r-bar-track"><div className="r-bar-fill" style={{width:barsAnimated?sc+"%":"0",background:c}} /></div>
+              <span className="r-bar-val">{sc}</span>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Sentinel for float CTA — 过半屏触发 */}
+      {/* ===== Benchmark Table ===== */}
+      <div className="r-section stagger">
+        <div className="r-shead">行业对标</div>
+        <table className="r-table">
+          <thead><tr><th>维度</th><th>你的得分</th><th>行业平均</th><th>领先水平</th><th>差距</th><th>评级</th></tr></thead>
+          <tbody>
+            {DIMENSION_ORDER.map(dim => {
+              const my = scores.scores[dim]||0;
+              const avg = industryAvgs[dim]||50;
+              const leading = industryLeading[dim]||75;
+              const gap = my - leading;
+              let dot = "#ef4444"; if (my >= 66) dot = "#22c55e"; else if (my >= 41) dot = "#f59e0b";
+              return (
+                <tr key={dim}>
+                  <td><span className="r-dot" style={{background:dot}} />{DIMENSION_LABELS[dim]}</td>
+                  <td>{my}</td>
+                  <td style={{color:"var(--text-muted)"}}>{avg}</td>
+                  <td style={{color:"var(--brand-light)",fontWeight:500}}>{leading}</td>
+                  <td className={gap>=0?"r-up":"r-down"}>{gap>=0?"↑ +"+gap:"↓ "+gap}</td>
+                  <td style={{fontSize:12,color:gap>=0?"#22c55e":gap>=-10?"var(--text-muted)":"#ef4444"}}>{gap>=0?"领先":gap>=-10?"待提升":"薄弱"}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ===== Sentinel for float CTA ===== */}
       <div ref={floatSentinelRef} />
 
       {/* ===== Strengths & Improvements ===== */}
-      <div className="sw-grid-r stagger">
-        <div className="sw-card-r good">
-          <h4>核心优势</h4>
-          <ul>
-            {strengths.map((s, i) => (
-              <li key={s.dim}>
-                <span style={{ color: "#10B981", flexShrink: 0 }}>✓</span>
-                <span>{reportDimMap[s.dim] || s.label} · {s.score}分</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="sw-card-r bad">
-          <h4>改进重点</h4>
-          <ul>
-            {improvements.map((s, i) => (
-              <li key={s.dim}>
-                <span style={{ color: "#F59E0B", flexShrink: 0, fontWeight: 700 }}>!</span>
-                <span>{reportDimMap[s.dim] || s.label} · {s.score}分</span>
-              </li>
-            ))}
-          </ul>
+      <div className="r-section stagger">
+        <div className="r-shead">关键发现</div>
+        <div className="r-card-grid">
+          <div className="r-card">
+            <h4>核心优势</h4>
+            <ul>
+              {strengths.map(s => (
+                <li key={s.dim}><span style={{color:"#22c55e"}}>✓</span> {reportDimMap[s.dim] || s.label} · {s.score}分</li>
+              ))}
+            </ul>
+          </div>
+          <div className="r-card">
+            <h4>改进重点</h4>
+            <ul>
+              {improvements.map(s => (
+                <li key={s.dim}><span style={{color:"#f59e0b",fontWeight:700}}>!</span> {reportDimMap[s.dim] || s.label} · {s.score}分</li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
 
-      {/* ===== Improvement Roadmap ===== */}
-      <div className="s-section stagger">
-        <h3 className="s-title">改进路线图</h3>
-        <div className="road-grid-r">
-          {(report?.actions || fallbackActions).slice(0, 3).map((act, i) => {
-            const phases = ["Phase 1", "Phase 2", "Phase 3"];
-            const lines = ["p1", "p2", "p3"];
-            return (
-              <div key={i} className="road-card-r">
-                <div className={`r-line ${lines[i]}`} />
-                <div className="r-num">{phases[i]} · {act.timeline}</div>
-                <h4>{act.title}</h4>
-                <p>{act.why}</p>
-              </div>
-            );
-          })}
+      {/* ===== Roadmap ===== */}
+      <div className="r-section stagger">
+        <div className="r-shead">改进路线图</div>
+        <div className="r-road-grid">
+          {(report?.actions || fallbackActions).slice(0,3).map((act,i) => (
+            <div key={i} className="r-road">
+              <div className="phase">{act.timeline}</div>
+              <h4>{act.title}</h4>
+              <p>{act.why}</p>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* ===== Pain Point ===== */}
       {report?.painpoint && (
-        <div className="s-section stagger">
-          <div className="glass-card p-4 sm:p-6" style={{ borderColor: "rgba(239,68,68,0.15)" }}>
-            <h3 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "#ef4444" }}>这个阶段最容易犯的错</h3>
-            <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{report.painpoint}</p>
-          </div>
+        <div className="r-section stagger">
+          <div className="r-shead">这个阶段最容易犯的错</div>
+          <p style={{fontSize:13,color:"var(--text-secondary)",lineHeight:1.7}}>{report.painpoint}</p>
         </div>
       )}
+
+      {/* ===== Next Action ===== */}
+      <div className="r-section stagger">
+        <div className="r-shead">推荐下一步</div>
+        <div className="r-card" style={{borderLeft:"3px solid #22c55e"}}>
+          <p style={{fontSize:13,fontWeight:600,marginBottom:4}}>{sortedByScore[0].label}是当前最大短板（{sortedByScore[0].score}分）</p>
+          <p style={{fontSize:13,color:"var(--text-secondary)"}}>{fallbackActions[0].why}</p>
+        </div>
+      </div>
 
       {/* ===== Yima Value ===== */}
       {report?.yima && (
-        <div className="s-section stagger">
-          <div className="glass-card p-4 sm:p-6" style={{ borderColor: "rgba(59,130,246,0.15)" }}>
-            <h3 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--brand-light)" }}>逸马如何帮你解决这些问题</h3>
-            <p className="text-xs leading-relaxed mb-3" style={{ color: "var(--text-secondary)" }}>{report.yima}</p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {["22年连锁经验", "3000+企业验证", "195家推动上市", "方法进入200+高校教材"].map(t => (
-                <span key={t} style={{ fontSize: 10, padding: "2px 10px", borderRadius: 100, background: "rgba(59,130,246,0.08)", color: "var(--brand-light)", border: "1px solid rgba(59,130,246,0.12)" }}>✓ {t}</span>
-              ))}
-            </div>
+        <div className="r-section stagger">
+          <div className="r-shead">逸马如何帮你解决</div>
+          <p style={{fontSize:13,color:"var(--text-secondary)",lineHeight:1.7,marginBottom:12}}>{report.yima}</p>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {["22年连锁经验","3000+企业验证","195家推动上市","200+高校教材"].map(t => (
+              <span key={t} style={{fontSize:10,padding:"2px 10px",borderRadius:4,background:"rgba(59,130,246,0.06)",color:"var(--brand-light)",border:"1px solid rgba(59,130,246,0.1)"}}>✓ {t}</span>
+            ))}
           </div>
         </div>
       )}
 
-      {/* ===== 推荐下一步行动 ===== */}
-      <div className="s-section stagger">
-        <div className="glass-card p-4 sm:p-6" style={{ borderColor: "rgba(16,185,129,0.2)", borderLeft: "3px solid #10b981" }}>
-          <h3 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "#10b981" }}>🎯 推荐下一步</h3>
-          <p className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
-            {sortedByScore[0].label}是当前最大短板（{sortedByScore[0].score}分）
-          </p>
-          <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-            {fallbackActions[0].why}
-          </p>
-        </div>
-      </div>
-
       {/* ===== CTA ===== */}
-      <div className="s-section stagger noprint">
-        <div className="glass-card p-4 sm:p-6" style={{ borderColor: "rgba(59,130,246,0.25)", background: "linear-gradient(135deg, rgba(59,130,246,0.06), rgba(6,182,212,0.04))" }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>让逸马顾问帮你把诊断变成行动</h3>
-          <p style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 14 }}>
-            {report?.nextStep || `基于你的${scores.overall_score}分诊断结果，我们建议下一步进行针对性的深度分析。留下手机号，逸马顾问将在1个工作日内联系你，提供免费的30分钟电话解读。`}
-          </p>
-          {submitted ? (
-            <div style={{ textAlign: "center", padding: "12px", borderRadius: 10, background: "rgba(16,185,129,0.08)" }}>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "#10b981" }}>已提交，逸马顾问将尽快联系你</p>
-            </div>
-          ) : (
-            <>
-              {scores.overall_score < 45 && (
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)" }}>
-                  <span style={{ fontSize: 12 }}>⚠️</span>
-                  <span style={{ fontSize: 11, fontWeight: 500, color: "#ef4444" }}>你的系统性问题较多，6个月内出问题的概率很高。建议尽快深度诊断。</span>
-                </div>
-              )}
-              <div style={{ display: "flex", gap: 8 }}>
-                <input type="tel" value={phone} onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 11); setPhone(v); }}
-                  placeholder="输入手机号，获取专属方案" maxLength={11}
-                  style={{ flex: 1, padding: "10px 14px", borderRadius: 10, fontSize: 13, outline: "none", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "var(--text-primary)" }} />
-                <button onClick={handleConsult} disabled={phone.length !== 11}
-                  style={{ padding: "10px 20px", borderRadius: 10, fontSize: 13, fontWeight: 600, border: "none", cursor: phone.length === 11 ? "pointer" : "default", transition: "all .3s",
-                    background: phone.length === 11 ? "linear-gradient(135deg,#3B82F6,#2563EB)" : "rgba(255,255,255,0.06)", color: phone.length === 11 ? "white" : "var(--text-muted)" }}>
-                  免费解读</button>
+      <div className="r-cta stagger noprint">
+        <h3>让逸马顾问帮你把诊断变成行动</h3>
+        <p>{report?.nextStep || "基于你的"+scores.overall_score+"分诊断结果，留下手机号获取免费解读"}</p>
+        {submitted ? (
+          <div style={{textAlign:"center",padding:12,background:"rgba(34,197,94,0.06)",borderRadius:6}}>
+            <p style={{fontSize:13,fontWeight:600,color:"#22c55e"}}>已提交，逸马顾问将尽快联系你</p>
+          </div>
+        ) : (
+          <>
+            {scores.overall_score < 45 && (
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:12,padding:"8px 12px",borderRadius:6,background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.1)"}}>
+                <span>⚠️</span><span style={{fontSize:11,color:"#ef4444"}}>系统性问题较多，6个月内出问题概率高</span>
               </div>
-            </>
-          )}
-          <p style={{ fontSize: 10, color: "var(--text-muted)", textAlign: "center", marginTop: 10 }}>不收费 · 不限时 · 纯粹基于你的诊断结果做深度解读</p>
-        </div>
+            )}
+            <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+              <input type="tel" value={phone} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,11);setPhone(v)}} placeholder="输入手机号" maxLength={11}
+                style={{width:180,padding:"8px 12px",borderRadius:6,fontSize:13,outline:"none",background:"rgba(255,255,255,0.04)",border:"1px solid var(--border)",color:"var(--text-primary)"}} />
+              <button onClick={handleConsult} disabled={phone.length!==11} className="r-btn r-btn-p" style={{height:36,padding:"0 20px",fontSize:13}}>免费解读</button>
+            </div>
+          </>
+        )}
+        <p style={{fontSize:10,color:"var(--text-muted)",marginTop:12}}>不收费 · 不限时 · 纯粹基于诊断结果深度解读</p>
       </div>
 
       {/* ===== Footer ===== */}
-      <footer style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--text-muted)", paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.04)", flexWrap: "wrap", gap: 8 }}>
-        <span>© 2026 逸马诊断 yima777.cn</span>
-        <span>逸马22年连锁方法论 · 200+高校教材 · 国家版权课程</span>
-      </footer>
+      <div className="r-ft noprint">
+        <span>逸马诊断 yima777.cn</span>
+        <span>22年方法论 · 200+高校教材 · 国家版权课程</span>
+      </div>
 
       {/* ===== Float CTA Bar ===== */}
       {showFloatCTA && !submitted && (
-        <div className="float-cta-bar" style={{
-          position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
-          background: "rgba(2,6,23,0.97)", backdropFilter: "blur(16px)",
-          borderTop: "1px solid rgba(59,130,246,0.15)",
-          padding: "10px 16px", paddingBottom: "max(10px, env(safe-area-inset-bottom))",
-        }}>
-          <div style={{ maxWidth: 500, margin: "0 auto", display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                你的报告只看了一半——最关键的建议在下面
-              </p>
+        <div className="float-cta-bar" style={{position:"fixed",bottom:0,left:0,right:0,zIndex:50,background:"rgba(2,6,23,0.97)",backdropFilter:"blur(16px)",borderTop:"1px solid rgba(59,130,246,0.15)",padding:"10px 16px",paddingBottom:"max(10px, env(safe-area-inset-bottom))"}}>
+          <div style={{maxWidth:500,margin:"0 auto",display:"flex",alignItems:"center",gap:8}}>
+            <div style={{flex:1,minWidth:0}}>
+              <p style={{fontSize:12,fontWeight:600,color:"var(--text-primary)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>你的报告只看了一半——最关键的建议在下面</p>
             </div>
-            <input type="tel" value={phone} onChange={(e) => { const v = e.target.value.replace(/\D/g, "").slice(0, 11); setPhone(v); }}
-              placeholder="手机号" maxLength={11}
-              style={{ width: 100, padding: "7px 10px", borderRadius: 8, fontSize: 12, outline: "none", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", color: "var(--text-primary)" }} />
-            <button onClick={handleConsult} disabled={phone.length !== 11}
-              style={{ padding: "7px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600, border: "none", whiteSpace: "nowrap",
-                background: phone.length === 11 ? "var(--brand)" : "rgba(255,255,255,0.06)", color: phone.length === 11 ? "white" : "var(--text-muted)" }}>
-              免费解读</button>
+            <input type="tel" value={phone} onChange={e=>{const v=e.target.value.replace(/\D/g,"").slice(0,11);setPhone(v)}} placeholder="手机号" maxLength={11}
+              style={{width:100,padding:"7px 10px",borderRadius:8,fontSize:12,outline:"none",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",color:"var(--text-primary)"}} />
+            <button onClick={handleConsult} disabled={phone.length!==11}
+              style={{padding:"7px 14px",borderRadius:8,fontSize:12,fontWeight:600,border:"none",whiteSpace:"nowrap",background:phone.length===11?"var(--brand)":"rgba(255,255,255,0.06)",color:phone.length===11?"white":"var(--text-muted)"}}>免费解读</button>
           </div>
         </div>
       )}
-      {showFloatCTA && !submitted && <div style={{ height: 60 }} />}
+      {showFloatCTA && !submitted && <div style={{height:60}} />}
     </>
   );
 }
