@@ -79,14 +79,25 @@ export async function POST(request: Request) {
     }));
 
     // 飞书通知
-    const WEBHOOK_URL = "https://open.feishu.cn/open-apis/bot/v2/hook/e62aa6ed-ff47-459a-b344-b1d4a698ad55";
-    const webhook = ((process.env as any)?.LEADS_WEBHOOK_URL) || ((globalThis as any)?.LEADS_WEBHOOK_URL) || WEBHOOK_URL;
-    if (webhook) {
+    const FEISHU_URL = "https://open.feishu.cn/open-apis/bot/v2/hook/e62aa6ed-ff47-459a-b344-b1d4a698ad55";
+    const feishu = ((process.env as any)?.FEISHU_WEBHOOK_URL) || FEISHU_URL;
+    if (feishu) {
       const payload = JSON.stringify({
         msg_type: "text",
         content: { text: `📞新线索\n手机：${phone}\n行业：${industryName}\n门店：${storeName}\n得分：${score || "-"}（${levelName}）` }
       });
-      try { await fetch(webhook, { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }); } catch {}
+      try { await fetch(feishu, { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }); } catch {}
+    }
+
+    // 企微通知
+    const WECOM_URL = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=7be2b0df-36fa-4f04-8cb6-4c751367c137";
+    const wecom = ((process.env as any)?.WECOM_WEBHOOK_URL) || WECOM_URL;
+    if (wecom) {
+      const payload = JSON.stringify({
+        msgtype: "text",
+        text: { content: `📞 新线索\n手机：${phone}\n行业：${industryName}\n门店：${storeName}\n得分：${score || "-"}（${levelName}）` }
+      });
+      try { await fetch(wecom, { method: "POST", headers: { "Content-Type": "application/json" }, body: payload }); } catch {}
     }
 
     return new Response(safeJson({ success: true, kv: true }), { headers: { "Content-Type": "application/json" } });
